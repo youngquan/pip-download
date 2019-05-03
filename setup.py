@@ -13,7 +13,7 @@ with open('pipdownload/__init__.py', 'r') as f:
 with open('README.rst', 'r', encoding='utf-8') as f:
     readme = f.read()
 
-REQUIRES = []
+REQUIRES = ['click']
 
 setup(
     name='pipdownload',
@@ -49,4 +49,9 @@ setup(
     tests_require=['coverage', 'pytest'],
 
     packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'pipdownload = pipdownload.cli:pipdownload',
+        ],
+    },
 )
