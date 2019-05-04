@@ -1,14 +1,22 @@
 import logging
+import os
 import sys
 from collections import OrderedDict
+import itertools
 
 from cachecontrol import CacheControl
 from pip._internal.index import PackageFinder
+from pip._internal.utils.temp_dir import TempDirectory
 from pip._vendor.packaging.specifiers import SpecifierSet
-from pip._internal.download import PipSession
+from pip._internal.download import PipSession, unpack_url
+from pip._vendor.packaging.requirements import Requirement, InvalidRequirement
+from pip._internal.commands.download import DownloadCommand
 
 import click
 import requests
+
+from tqdm import tqdm
+import math
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,9 +25,20 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 sess = requests.Session()
 session = CacheControl(sess)
 
+options, args = DownloadCommand().parse_args(['requests=1.2.1'])
+# dis_dir = options['src_dir']
+dis_dir = os.getcwd()
+
+build_delete = True
+
+
 
 def get_pypi_url(package_name: str, package_version: str=None) -> str:
     url_prefix = 'https://pypi.python.org/pypi/'
+    finder = PackageFinder(find_links=list(), index_urls=['https://pypi.org/simple'],
+                           session=PipSession())
+    candidates = finder.find_candidates(package_name, SpecifierSet(specifiers=package_version))
+    package_version = str(candidates.get_best().version)
     if package_version:
         url = url_prefix + '{0}/{1}/json'.format(package_name, package_version)
     else:
@@ -48,16 +67,12 @@ def get_dependencies(package: PythonPackage, requirements: OrderedDict):
             package.download_urls = package_data['urls']
             requirements.update({package.name: package})
             dependency_packages = OrderedDict()
-            if dependencies is not None:
+            if dependencies:
                 for dependency in dependencies:
                     if ';' not in dependency:
                         if ' ' in dependency:
                             package_name, package_version_bracket = dependency.split(' ')
                             package_version = package_version_bracket[1:-1]
-                            finder = PackageFinder(find_links=list(), index_urls=['https://pypi.org/simple'],
-                                                   session=PipSession())
-                            candidates = finder.find_candidates(package_name, SpecifierSet(specifiers=package_version))
-                            package_version = str(candidates.get_best().version)
                         else:
                             package_name = dependency
                             package_version = None
@@ -84,15 +99,22 @@ def get_dependencies(package: PythonPackage, requirements: OrderedDict):
 @click.command()
 @click.argument('packages', nargs=-1)
 @click.option('-r', '--requirement', 'requirement_file',
-              type=click.File(),
+              type=click.File(encoding='utf-8'),
               help='Requirements File.')
 def pipdownload(packages: str, requirement_file):
-    for package in packages:
-        if '==' in package:
-            package_name, package_version = package.split('==')
-        else:
-            package_name = package
-            package_version = None
+    # for package in requirement_file:
+    #     print(package)
+    if requirement_file:
+        packages_extra = {req.strip() for req in requirement_file}
+    else:
+        packages_extra = set()
+    for package in itertools.chain(packages_extra, packages):
+        try:
+            req = Requirement(package)
+        except InvalidRequirement:
+            logging.error('Invalid requirement: %s' % package)
+        package_name = req.name
+        package_version = str(req.specifier)
         requirements_dep = OrderedDict()
         requirements = OrderedDict()
         requirements_dep[package_name] = PythonPackage(package_name, package_version, package, None)
@@ -102,10 +124,33 @@ def pipdownload(packages: str, requirement_file):
             if dependencies is not None:
                     requirements_dep.update(dependencies)
 
-        for package_name, package_info in requirements.items():
-            logger.info('Downloading %s...' % package_info.show_name)
+        with TempDirectory(
+                options.build_dir, delete=build_delete, kind="download"
+        ) as directory:
+            for _, package_info in requirements.items():
+                for download_url in package_info.download_urls:
+
+                    unpack_url(download_url['url'], directory, dis_dir, only_download=True,
+                               session=PipSession(), progress_bar="on")
+                    logger.info('Downloading %s...' % package_info.show_name)
 
 
+
+
+url = "http://example.com/bigfile.bin"
+# Streaming, so we can iterate over the response.
+r = requests.get(url, stream=True)
+
+# Total size in bytes.
+total_size = int(r.headers.get('content-length', 0))
+block_size = 1024
+wrote = 0
+with open('output.bin', 'wb') as f:
+    for data in tqdm(r.iter_content(block_size), total=math.ceil(total_size//block_size), unit='KB', unit_scale=True):
+        wrote = wrote + len(data)
+        f.write(data)
+if total_size != 0 and wrote != total_size:
+    print("ERROR, something went wrong")
 if __name__ == '__main__':
     pipdownload()
 
