@@ -1,12 +1,8 @@
 pipdownload
 ===========
 
------
-
 pipdownload is a tool which can be used to download python pakcages and its dependencies listed on pypi's download files
-page, like this:
-
-  `https://pypi.org/project/<project_name>/#files` 
+page.
 
 It use pypi's `JSON API <https://warehouse.readthedocs.io/api-reference/json/>`_ to fetch packages information about
 dependecies and urls. Meanwhile, it use pip's interal method to get the best package version from package's version
@@ -44,7 +40,3 @@ pipdownload is distributed under the terms of both
 - `Apache License, Version 2.0 <https://choosealicense.com/licenses/apache-2.0>`_
 
 at your option.
-
-Credits
--------
-

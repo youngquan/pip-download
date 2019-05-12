@@ -8,7 +8,7 @@ license = 'MIT/Apache-2.0'
 url = 'https://github.com/_/pipdownload'
 
 [requires]
-python_version = ['2.7', '3.5', '3.6', 'pypy', 'pypy3']
+python_version = ['3.5', '3.6', '3.7']
 
 [build-system]
 requires = ['setuptools', 'wheel']
