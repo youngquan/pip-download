@@ -17,6 +17,9 @@ REQUIRES = [
     'click',
     'requests',
     'cachecontrol',
+    'packaging',
+    'retrying',
+    'bs4',
 ]
 
 setup(

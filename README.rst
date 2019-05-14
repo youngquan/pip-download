@@ -4,9 +4,8 @@ pipdownload
 pipdownload is a tool which can be used to download python pakcages and its dependencies listed on pypi's download files
 page.
 
-It use pypi's `JSON API <https://warehouse.readthedocs.io/api-reference/json/>`_ to fetch packages information about
-dependecies and urls. Meanwhile, it use pip's interal method to get the best package version from package's version
-specifiers.
+At first, it use `pip download` to download packages. Then it use these downloaded packages to download remaining
+packages.
 
 .. contents:: **Table of Contents**
     :backlinks: none

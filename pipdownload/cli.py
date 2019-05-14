@@ -1,5 +1,4 @@
 import itertools
-import logging
 import os
 import subprocess
 import sys
@@ -8,13 +7,9 @@ import click
 import requests
 from cachecontrol import CacheControl
 
-from packaging.requirements import InvalidRequirement, Requirement
-
 from pipdownload.utils import TempDirectory, resolve_package_files, get_file_links, download, mkurl_pypi_url
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler(sys.stdout))
+from pipdownload import logger
 
 sess = requests.Session()
 session = CacheControl(sess)
@@ -43,8 +38,15 @@ def pipdownload(packages, index_url, requirement_file, dest_dir):
         packages_extra = set()
     for package in itertools.chain(packages_extra, packages):
         with TempDirectory(delete=True) as directory:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'download', '-i', index_url,
-                                   '--dest', directory.path, package])
+            try:
+                subprocess.check_call([sys.executable, '-m', 'pip', 'download', '-i', index_url,
+                                       '--dest', directory.path,
+                                       '--no-binary', ':all:',
+                                       package])
+            except subprocess.CalledProcessError as e:
+                logger.warning('Can not download the package %s with no binary' % package)
+                subprocess.check_call([sys.executable, '-m', 'pip', 'download', '-i', index_url,
+                                       '--dest', directory.path, package])
             for python_package in resolve_package_files(os.listdir(directory.path)):
                 url = mkurl_pypi_url(index_url, python_package.name)
                 try:
