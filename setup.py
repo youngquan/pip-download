@@ -23,7 +23,7 @@ REQUIRES = [
 ]
 
 setup(
-    name='pipdownload',
+    name='pip-download',
     version=version,
     description='',
     long_description=readme,
@@ -31,7 +31,7 @@ setup(
     author_email='youngquan@qq.com',
     maintainer='youngquan',
     maintainer_email='youngquan@qq.com',
-    url='https://github.com/youngquan/pipdownload',
+    url='https://github.com/youngquan/pip-download',
     license='MIT/Apache-2.0',
 
     keywords=[
@@ -59,7 +59,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'pipdownload = pipdownload.cli:pipdownload',
+            'pip-download = pipdownload.cli:pipdownload',
         ],
     },
 )

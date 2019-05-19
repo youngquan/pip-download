@@ -7,13 +7,13 @@ import re
 import shutil
 import tempfile
 import urllib
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
 import requests
 from bs4 import BeautifulSoup
 from packaging.utils import canonicalize_name
 from retrying import retry
-from urllib.parse import urlparse, urlunparse, urljoin
 
 from pipdownload.exceptions import HashMismatch
 
@@ -266,6 +266,7 @@ def download(url, dest_dir):
         size = 0
         if response.status_code == 200:
             content_size = int(response.headers['content-length'])
+            click.echo('Downloading file %s: ' % file_name)
             with open(download_file_path, 'wb') as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
@@ -275,6 +276,7 @@ def download(url, dest_dir):
                         % ('>'*int(size*50/content_size), float(size / content_size * 100)),
                         nl=False
                     )
+                click.echo('\n', nl=False)
     except ConnectionError as e:
         logger.error('Cannot download file from url: %s' % file_url)
         logger.error(e)

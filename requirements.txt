@@ -1,7 +1,0 @@
-bs4
-packaging
-retrying
-cachecontrol
-requests
-click
--e .
