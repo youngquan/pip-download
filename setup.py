@@ -25,7 +25,7 @@ REQUIRES = [
 setup(
     name='pip-download',
     version=version,
-    description='',
+    description='A wrapper for pip download.',
     long_description=readme,
     author='youngquan',
     author_email='youngquan@qq.com',
