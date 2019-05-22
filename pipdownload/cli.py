@@ -1,5 +1,6 @@
 import itertools
 import os
+import shutil
 import subprocess
 import sys
 
@@ -35,6 +36,7 @@ def pipdownload(packages, index_url, requirement_file, dest_dir):
     """
     if not dest_dir:
         dest_dir = os.getcwd()
+    # dest_dir = os.path.abspath(dest_dir)
     if requirement_file:
         packages_extra = {req.strip() for req in requirement_file}
         packages_extra.remove('')
@@ -44,24 +46,22 @@ def pipdownload(packages, index_url, requirement_file, dest_dir):
         with TempDirectory(delete=True) as directory:
             logger.info('We are using pip download command to download package %s' % package)
             logger.info('-' * 50)
+
             try:
                 subprocess.check_call([sys.executable, '-m', 'pip', 'download', '-i', index_url,
-                                       '--dest', directory.path,
-                                       '--no-binary', ':all:',
-                                       package])
+                                       '--dest', directory.path, package])
             except subprocess.CalledProcessError as e:
-                logger.warning("Can not download the package %s with no binary. However, it is ok."
-                               "We will try to download it with binary." % package)
-                try:
-                    subprocess.check_call([sys.executable, '-m', 'pip', 'download', '-i', index_url,
-                                           '--dest', directory.path, package])
-                except subprocess.CalledProcessError as e:
-                    logger.error('Sorry, we can not use pip download to download the package %s,'
-                                 ' and Exception is below' % package)
-                    logger.error(e)
-
+                logger.error('Sorry, we can not use pip download to download the package %s,'
+                             ' and Exception is below' % package)
+                logger.error(e)
+                raise
             logger.info('-' * 50)
-            for python_package in resolve_package_files(os.listdir(directory.path)):
+            logger.info('At First, we copy these files to %s' % dest_dir)
+            file_names = os.listdir(directory.path)
+            for file_name in file_names:
+                shutil.copy(os.path.join(directory.path, file_name), dest_dir)
+            logger.info('All file have been copied!')
+            for python_package in resolve_package_files(file_names):
                 url = mkurl_pypi_url(index_url, python_package.name)
                 try:
                     r = session.get(url)
