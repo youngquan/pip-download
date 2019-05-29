@@ -19,7 +19,6 @@ REQUIRES = [
     'cachecontrol',
     'packaging',
     'retrying',
-    'bs4',
 ]
 
 setup(

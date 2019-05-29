@@ -11,7 +11,6 @@ from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
 import requests
-from bs4 import BeautifulSoup
 from packaging.utils import canonicalize_name
 from retrying import retry
 
@@ -185,6 +184,11 @@ class Hashes:
 
 
 def resolve_package_file(name):
+    """
+    Resolve the package's name and version from the full name of python package
+    :param name: The name of python package
+    :return: An instance of `PythonPackage`
+    """
     result = None
     if name.endswith('.tar.gz'):
         result = re.search(r'(?<=-)[^-]+?(?=\.tar\.gz)', name)
@@ -224,20 +228,17 @@ def make_absolute(link, base_url):
 
 
 def get_file_links(html_doc, base_url, python_package_local):
-    soup = BeautifulSoup(html_doc, 'html.parser')
-
     def gen():
-        for link in soup.find_all('a'):
+        for link in re.finditer(r'<a.*?href="(.+?)".*?>(.+?)</a>', html_doc):
+            link_href, link_text = link.groups()
             try:
-                href = link.attrs['href'].strip()
-                python_package_on_page = resolve_package_file(link.get_text())
+                href = link_href.strip()
+                python_package_on_page = resolve_package_file(link_text)
                 if python_package_local == python_package_on_page:
-                    if href and not href.startswith('#') and not href.startswith(
-                            ('javascript:', 'mailto:')):
+                    if href:
                         yield make_absolute(href, base_url)
             except KeyError:
                 pass
-
     return set(gen())
 
 

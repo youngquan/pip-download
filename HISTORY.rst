@@ -1,6 +1,12 @@
 Release History
 ===============
 
+0.0.4 (2019-05-29)
+------------------
+
+- Add option whl_suffixes to download specified whls
+- Remove beautifulsoup(bs4) from requirement
+
 0.0.3 (2019-05-22)
 ------------------
 

@@ -29,7 +29,12 @@ session = CacheControl(sess)
               type=click.Path(exists=True, file_okay=False,
                               writable=True, resolve_path=True),
               help='Destination directory.')
-def pipdownload(packages, index_url, requirement_file, dest_dir):
+@click.option('-s', '--suffix', 'whl_suffixs',
+              type=click.STRING,
+              default=['win_amd64', 'manylinux1_x86_64'],
+              multiple=True,
+              help='Suffix of whl packages except `none-any` `tar.gz` `zip`.')
+def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixs):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
     pypi's `download files` page.
@@ -66,7 +71,12 @@ def pipdownload(packages, index_url, requirement_file, dest_dir):
                 try:
                     r = session.get(url)
                     for file in get_file_links(r.text, index_url, python_package):
-                        download(file, dest_dir)
+                        if whl_suffixs:
+                            for suffix in whl_suffixs + ('none-any', 'tar.gz', 'zip'):
+                                if suffix in file:
+                                    download(file, dest_dir)
+                        else:
+                            download(file, dest_dir)
 
                 except ConnectionError as e:
                     logger.error('Can not get information about package %s, and the Exception is below.',
