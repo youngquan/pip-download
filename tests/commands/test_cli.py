@@ -8,8 +8,13 @@ from pipdownload.utils import TempDirectory
 
 
 @pytest.fixture(scope="module")
-def requirement_file_path():
-    return os.path.abspath(os.path.join(os.getcwd(), 'tests/test_requirements.txt'))
+def requirement_file_redundant():
+    return os.path.abspath(os.path.join(os.getcwd(), 'tests/test_requirements_redundant.txt'))
+
+
+@pytest.fixture(scope="module")
+def requirement_file_normal():
+    return os.path.abspath(os.path.join(os.getcwd(), 'tests/test_requirements_normal.txt'))
 
 
 def test_download_click_package():
@@ -21,10 +26,19 @@ def test_download_click_package():
         assert len(files) == 2
 
 
-def test_download_from_requirement_file(requirement_file_path):
+def test_download_from_requirement_file_redundant(requirement_file_redundant):
     with TempDirectory(delete=True) as directory:
         runner = CliRunner()
-        result = runner.invoke(pipdownload, ['-r', requirement_file_path, '-d', directory.path])
+        result = runner.invoke(pipdownload, ['-r', requirement_file_redundant, '-d', directory.path])
+        assert result.exit_code == 0
+        files = os.listdir(directory.path)
+        assert len(files) == 2
+
+
+def test_download_from_requirement_file_normal(requirement_file_normal):
+    with TempDirectory(delete=True) as directory:
+        runner = CliRunner()
+        result = runner.invoke(pipdownload, ['-r', requirement_file_normal, '-d', directory.path])
         assert result.exit_code == 0
         files = os.listdir(directory.path)
         assert len(files) == 2
@@ -37,3 +51,14 @@ def test_download_with_option_whl_suffixes():
         assert result.exit_code == 0
         files = os.listdir(directory.path)
         assert len(files) == 14
+
+
+def test_download_with_option_python_versions():
+    with TempDirectory(delete=True) as directory:
+        runner = CliRunner()
+        result = runner.invoke(pipdownload, [
+            ' MarkupSafe==1.1.1', '-py', 'cp37', '-d', directory.path
+        ])
+        assert result.exit_code == 0
+        files = os.listdir(directory.path)
+        assert len(files) == 3

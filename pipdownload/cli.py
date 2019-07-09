@@ -29,12 +29,16 @@ session = CacheControl(sess)
               type=click.Path(exists=True, file_okay=False,
                               writable=True, resolve_path=True),
               help='Destination directory.')
-@click.option('-s', '--suffix', 'whl_suffixs',
+@click.option('-s', '--suffix', 'whl_suffixes',
               type=click.STRING,
               default=['win_amd64', 'manylinux1_x86_64'],
               multiple=True,
               help='Suffix of whl packages except `none-any` `tar.gz` `zip`.')
-def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixs):
+@click.option('-py', '--python-version', 'python_versions',
+              type=click.STRING,
+              multiple=True,
+              help='Versions of python to be downloaded! Like: cp37 cp36 and ect.')
+def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixes, python_versions):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
     pypi's `download files` page.
@@ -44,7 +48,7 @@ def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixs):
     # dest_dir = os.path.abspath(dest_dir)
     if requirement_file:
         packages_extra = {req.strip() for req in requirement_file}
-        packages_extra.remove('')
+        packages_extra.discard('')
     else:
         packages_extra = set()
     for package in itertools.chain(packages_extra, packages):
@@ -71,11 +75,37 @@ def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixs):
                 try:
                     r = session.get(url)
                     for file in get_file_links(r.text, index_url, python_package):
-                        if whl_suffixs:
-                            for suffix in whl_suffixs + ('none-any', 'tar.gz', 'zip'):
+
+                        if 'tar.gz' in file:
+                            download(file, dest_dir)
+                            continue
+                        if 'none-any' in file:
+                            download(file, dest_dir)
+                            continue
+                        if 'zip' in file:
+                            download(file, dest_dir)
+                            continue
+
+                        eligible = True
+                        if whl_suffixes:
+                            for suffix in whl_suffixes:
                                 if suffix in file:
-                                    download(file, dest_dir)
-                        else:
+                                    eligible = True
+                                    break
+                                else:
+                                    eligible = False
+                        if not eligible:
+                            continue
+
+                        if python_versions:
+                            for version in python_versions:
+                                if version in file:
+                                    eligible = True
+                                    break
+                                else:
+                                    eligible = False
+
+                        if eligible:
                             download(file, dest_dir)
 
                 except ConnectionError as e:
