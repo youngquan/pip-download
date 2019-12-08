@@ -1,3 +1,7 @@
 include README.rst
 include LICENSE-APACHE
 include LICENSE-MIT
+include HISTORY.rst
+include pyproject.toml
+include tox.ini
+recursive-include tests *.txt
