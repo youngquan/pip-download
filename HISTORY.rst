@@ -1,6 +1,13 @@
 Release History
 ===============
 
+0.0.8 (2019-12-15)
+------------------
+
+- Create packages directory if it is missing
+
+Closes #9
+
 0.0.7 (2019-12-15)
 ------------------
 

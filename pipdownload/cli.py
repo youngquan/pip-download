@@ -32,7 +32,7 @@ session = CacheControl(sess)
                               resolve_path=True),
               help='Requirements File.')
 @click.option('-d', '--dest', 'dest_dir',
-              type=click.Path(exists=True, file_okay=False,
+              type=click.Path(exists=False, file_okay=False,
                               writable=True, resolve_path=True),
               help='Destination directory.')
 @click.option('-s', '--suffix', 'whl_suffixes',
@@ -64,6 +64,9 @@ def pipdownload(packages, index_url, requirement_file, dest_dir, whl_suffixes, p
 
     if not dest_dir:
         dest_dir = os.getcwd()
+    else:
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
     # dest_dir = os.path.abspath(dest_dir)
     if requirement_file:
         packages_extra_dict = pip_api.parse_requirements(requirement_file)

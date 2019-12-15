@@ -65,3 +65,17 @@ def test_download_with_option_python_versions():
         assert result.exit_code == 0
         files = os.listdir(directory.path)
         assert len(files) == 4
+
+
+def test_download_when_dest_dir_does_not_exists():
+    with TempDirectory(delete=True) as directory:
+        runner = CliRunner()
+        dir_name = 'tmp'
+        result = runner.invoke(pipdownload, [
+            'click', '-d', os.path.join(directory.path, dir_name)
+        ])
+        assert result.exit_code == 0
+        dirs = os.listdir(directory.path)
+        assert len(dirs) == 1
+        files = os.listdir(os.path.join(directory.path, dir_name))
+        assert len(files) == 2
