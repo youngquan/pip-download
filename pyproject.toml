@@ -1,11 +1,11 @@
 [metadata]
 name = 'pipdownload'
 version = '0.0.1'
-description = ''
+description = 'A wrapper for pip download'
 author = 'youngquan'
 author_email = 'youngquan@qq.com'
 license = 'MIT/Apache-2.0'
-url = 'https://github.com/_/pipdownload'
+url = 'https://github.com/youngquan/pipdownload'
 
 [requires]
 python_version = ['3.5', '3.6', '3.7']
