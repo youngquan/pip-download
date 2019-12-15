@@ -7,6 +7,7 @@ import re
 import shutil
 import tempfile
 import urllib
+from functools import partial
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
@@ -242,7 +243,7 @@ def get_file_links(html_doc, base_url, python_package_local):
     return set(gen())
 
 
-def download(url, dest_dir):
+def download(url, dest_dir, quiet=False):
     file_url, file_hash = url.split('#')
     file_name = os.path.basename(file_url)
     hash_algo, hash_value = file_hash.split('=')
@@ -267,20 +268,26 @@ def download(url, dest_dir):
         size = 0
         if response.status_code == 200:
             content_size = int(response.headers['content-length'])
-            click.echo('Downloading file %s: ' % file_name)
+            logger.info('Downloading file %s: ' % file_name)
+            # click.echo('Downloading file %s: ' % file_name)
             with open(download_file_path, 'wb') as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
-                    size += len(data)
-                    click.echo(
-                        '\r' + '[Processing]:%s%.2f%%'
-                        % ('>'*int(size*50/content_size), float(size / content_size * 100)),
-                        nl=False
-                    )
-                click.echo('\n', nl=False)
+                    if not quiet:
+                        size += len(data)
+                        click.echo(
+                            '\r' + '[Processing]:%s%.2f%%'
+                            % ('>'*int(size*50/content_size), float(size / content_size * 100)),
+                            nl=False
+                        )
+                if not quiet:
+                    click.echo('\n', nl=False)
     except ConnectionError as e:
         logger.error('Cannot download file from url: %s' % file_url)
         logger.error(e)
+
+
+quiet_download = partial(download, quiet=True)
 
 
 def mkurl_pypi_url(url, project_name):

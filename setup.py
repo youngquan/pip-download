@@ -19,6 +19,9 @@ REQUIRES = [
     'cachecontrol',
     'packaging',
     'retrying',
+    'pip-api',
+    'tzlocal',
+    'pip',
 ]
 
 setup(

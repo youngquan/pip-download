@@ -26,6 +26,8 @@ def test_download_click_package():
         assert len(files) == 2
 
 
+# 这里的多余表示的是 requirement 文件包含了多余的换行符
+# "redundant" means there are redundant blank lines in requirement file.
 def test_download_from_requirement_file_redundant(requirement_file_redundant):
     with TempDirectory(delete=True) as directory:
         runner = CliRunner()
@@ -47,18 +49,19 @@ def test_download_from_requirement_file_normal(requirement_file_normal):
 def test_download_with_option_whl_suffixes():
     with TempDirectory(delete=True) as directory:
         runner = CliRunner()
-        result = runner.invoke(pipdownload, ['grpcio==1.21.1', '-d', directory.path])
+        result = runner.invoke(pipdownload, [
+            'MarkupSafe==1.1.1', '--suffix', 'win_amd64', '-d', directory.path])
         assert result.exit_code == 0
         files = os.listdir(directory.path)
-        assert len(files) == 14
+        assert len(files) == 6
 
 
 def test_download_with_option_python_versions():
     with TempDirectory(delete=True) as directory:
         runner = CliRunner()
         result = runner.invoke(pipdownload, [
-            ' MarkupSafe==1.1.1', '-py', 'cp37', '-d', directory.path
+            'MarkupSafe==1.1.1', '-py', 'cp27', '-d', directory.path
         ])
         assert result.exit_code == 0
         files = os.listdir(directory.path)
-        assert len(files) == 3
+        assert len(files) == 4

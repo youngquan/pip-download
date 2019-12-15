@@ -1,6 +1,17 @@
 Release History
 ===============
 
+0.0.7 (2019-12-15)
+------------------
+
+- Do not copy files from the results from command `pip download`
+- add an option `--quiet` or `-q` to display progress bars and logs
+- use  pypi.org as the default pypi index, and use timezone to determine the time zone
+- use package pip-api to parse the requirement file
+- add three dependencies: pip-api, pip and tzlocal
+
+Closes #1 #4 #5 #7 #8
+
 0.0.4 (2019-05-29)
 ------------------
 
