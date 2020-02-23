@@ -29,6 +29,7 @@ setup(
     version=version,
     description='A wrapper for pip download in offline scenario.',
     long_description=readme,
+    long_description_content_type="text/markdown",
     author='youngquan',
     author_email='youngquan@qq.com',
     maintainer='youngquan',
