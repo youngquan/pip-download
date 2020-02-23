@@ -10,7 +10,7 @@ with open('pipdownload/__init__.py', 'r') as f:
     else:
         version = '0.0.1'
 
-with open('README.rst', 'r', encoding='utf-8') as f:
+with open('README.md', 'r', encoding='utf-8') as f:
     readme = f.read()
 
 REQUIRES = [
@@ -49,14 +49,21 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
 
     install_requires=REQUIRES,
-    tests_require=['coverage', 'pytest'],
+    tests_require=['coverage', 'pytest', 'pytest-datadir'],
+    extras_require={
+            'dev': [
+                'isort',
+                'autoflake',
+                'black'
+            ]
+        },
 
     packages=find_packages(),
     entry_points={

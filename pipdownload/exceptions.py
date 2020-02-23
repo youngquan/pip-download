@@ -10,11 +10,14 @@ class HashMismatch(Exception):
         improve its error message.
 
     """
+
     order = 4
-    head = ('THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS '
-            'FILE. If you have updated the package versions, please update '
-            'the hashes. Otherwise, examine the package contents carefully; '
-            'someone may have tampered with them.')
+    head = (
+        "THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS "
+        "FILE. If you have updated the package versions, please update "
+        "the hashes. Otherwise, examine the package contents carefully; "
+        "someone may have tampered with them."
+    )
 
     def __init__(self, allowed, gots):
         """
@@ -27,7 +30,7 @@ class HashMismatch(Exception):
         self.gots = gots
 
     def body(self):
-        return '%s' % (self._hash_comparison())
+        return "%s" % (self._hash_comparison())
 
     def _hash_comparison(self):
         """
@@ -40,17 +43,20 @@ class HashMismatch(Exception):
                     Got        bcdefbcdefbcdefbcdefbcdefbcdefbcdefbcdefbcdef
 
         """
+
         def hash_then_or(hash_name):
             # For now, all the decent hashes have 6-char names, so we can get
             # away with hard-coding space literals.
-            return chain([hash_name], repeat('    or'))
+            return chain([hash_name], repeat("    or"))
 
         lines = []
         for hash_name, expecteds in self.allowed.items():
             prefix = hash_then_or(hash_name)
-            lines.extend(('        Expected %s %s' % (next(prefix), e))
-                         for e in expecteds)
-            lines.append('             Got        %s\n' %
-                         self.gots[hash_name].hexdigest())
-            prefix = '    or'
-        return '\n'.join(lines)
+            lines.extend(
+                ("        Expected %s %s" % (next(prefix), e)) for e in expecteds
+            )
+            lines.append(
+                "             Got        %s\n" % self.gots[hash_name].hexdigest()
+            )
+            prefix = "    or"
+        return "\n".join(lines)

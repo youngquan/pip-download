@@ -8,14 +8,14 @@ import shutil
 import tempfile
 import urllib
 from functools import partial
+from typing import Generator, List
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
 import requests
 from packaging.utils import canonicalize_name
-from retrying import retry
-
 from pipdownload.exceptions import HashMismatch
+from retrying import retry
 
 logger = logging.getLogger(__name__)
 
@@ -85,9 +85,7 @@ class TempDirectory:
         # symlinked to another directory.  This tends to confuse build
         # scripts, so we canonicalize the path by traversing potential
         # symlinks here.
-        self.path = os.path.realpath(
-            tempfile.mkdtemp(prefix="pipdownload-")
-        )
+        self.path = os.path.realpath(tempfile.mkdtemp(prefix="pipdownload-"))
         logger.debug("Created temporary directory: {}".format(self.path))
 
     def cleanup(self):
@@ -100,7 +98,7 @@ class TempDirectory:
 
 class PythonPackage:
     def __init__(self, name, version):
-        self.name = name
+        self.name = canonicalize_name(name)
         self.version = version
 
     def __repr__(self):
@@ -124,6 +122,7 @@ class Hashes:
     known-good values
 
     """
+
     def __init__(self, hashes=None):
         # type: (Dict[str, List[str]]) -> None
         """
@@ -171,7 +170,7 @@ class Hashes:
 
     def check_against_path(self, path):
         # type: (str) -> None
-        with open(path, 'rb') as file:
+        with open(path, "rb") as file:
             return self.check_against_file(file)
 
     def __nonzero__(self):
@@ -184,28 +183,30 @@ class Hashes:
         return self.__nonzero__()
 
 
-def resolve_package_file(name):
+def resolve_package_file(name: str) -> PythonPackage:
     """
     Resolve the package's name and version from the full name of python package
     :param name: The name of python package
     :return: An instance of `PythonPackage`
     """
+    # result is used to match the version string in the full name of python package
     result = None
-    if name.endswith('.tar.gz'):
-        result = re.search(r'(?<=-)[^-]+?(?=\.tar\.gz)', name)
+    if name.endswith(".tar.gz"):
+        result = re.search(r"(?<=-)[^-]+?(?=\.tar\.gz)", name)
 
-    if name.endswith('.zip'):
-        result = re.search(r'(?<=-)[^-]+?(?=\.zip)', name)
+    if name.endswith(".zip"):
+        result = re.search(r"(?<=-)[^-]+?(?=\.zip)", name)
 
-    if name.endswith('.whl'):
-        result = re.search(r'(?<=-)[^-]+?(?=-p|-c)', name)
+    if name.endswith(".whl"):
+
+        result = re.search(r"(?<=-)[^-]+?(?=-p|-c)", name)
     if result is not None:
-        return PythonPackage(name[:result.start() - 1], result.group(0))
+        return PythonPackage(name[: result.start() - 1], result.group(0))
     else:
         return PythonPackage(None, None)
 
 
-def resolve_package_files(names):
+def resolve_package_files(names: List[str]) -> Generator[PythonPackage, None, None]:
     for name in names:
         result = resolve_package_file(name)
         if result.name is not None:
@@ -215,12 +216,12 @@ def resolve_package_files(names):
 def make_absolute(link, base_url):
     parsed = urlparse(link)._asdict()
     # If link is relative, then join it with base_url.
-    if not parsed['netloc']:
+    if not parsed["netloc"]:
         return urljoin(base_url, link)
 
     # Link is absolute; if it lacks a scheme, add one from base_url.
-    if not parsed['scheme']:
-        parsed['scheme'] = urlparse(base_url).scheme
+    if not parsed["scheme"]:
+        parsed["scheme"] = urlparse(base_url).scheme
 
         # Reconstruct the URL to incorporate the new scheme.
         parsed = (v for v in parsed.values())
@@ -228,9 +229,13 @@ def make_absolute(link, base_url):
     return link
 
 
-def get_file_links(html_doc, base_url, python_package_local):
+def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> set:
     def gen():
-        for link in re.finditer(r'<a.*?href="(.+?)".*?>(.+?)</a>', html_doc):
+        # use version to match hyperlinks in web pages, so the number of matches will get smaller.
+        version = re.escape(python_package_local.version)
+        for link in re.finditer(
+            rf'<a.*?href="(.+?)".*?>(.+{version}.+?)</a>', html_doc
+        ):
             link_href, link_text = link.groups()
             try:
                 href = link_href.strip()
@@ -240,25 +245,25 @@ def get_file_links(html_doc, base_url, python_package_local):
                         yield make_absolute(href, base_url)
             except KeyError:
                 pass
+
     return set(gen())
 
 
 def download(url, dest_dir, quiet=False):
-    file_url, file_hash = url.split('#')
+    file_url, file_hash = url.split("#")
     file_name = os.path.basename(file_url)
-    hash_algo, hash_value = file_hash.split('=')
+    hash_algo, hash_value = file_hash.split("=")
     hashes = Hashes({hash_algo: hash_value})
     download_file_path = os.path.join(dest_dir, file_name)
     if os.path.exists(download_file_path):
         try:
             hashes.check_against_path(download_file_path)
-            logger.info('The file %s has already been downloaded.' % download_file_path)
+            logger.info("The file %s has already been downloaded." % download_file_path)
             return
         except HashMismatch:
             logger.warning(
-                'Previously-downloaded file %s has bad hash. '
-                'Re-downloading.',
-                download_file_path
+                "Previously-downloaded file %s has bad hash. " "Re-downloading.",
+                download_file_path,
             )
             os.unlink(download_file_path)
 
@@ -267,23 +272,30 @@ def download(url, dest_dir, quiet=False):
         chunk_size = 1024
         size = 0
         if response.status_code == 200:
-            content_size = int(response.headers['content-length'])
-            logger.info('Downloading file %s: ' % file_name)
-            # click.echo('Downloading file %s: ' % file_name)
-            with open(download_file_path, 'wb') as file:
+            content_size = int(response.headers["content-length"])
+            logger.info("Downloading file %s: " % file_name)
+            with open(download_file_path, "wb") as file:
                 for data in response.iter_content(chunk_size=chunk_size):
                     file.write(data)
                     if not quiet:
                         size += len(data)
                         click.echo(
-                            '\r' + '[Processing]:%s%.2f%%'
-                            % ('>'*int(size*50/content_size), float(size / content_size * 100)),
-                            nl=False
+                            "\r"
+                            + "[Processing]:%s%.2f%%"
+                            % (
+                                ">" * int(size * 50 / content_size),
+                                float(size / content_size * 100),
+                            ),
+                            nl=False,
                         )
                 if not quiet:
-                    click.echo('\n', nl=False)
+                    click.echo("\n", nl=False)
+        else:
+            logger.error(
+                f"The status code is {response.status_code}, and the text is {response.text}."
+            )
     except ConnectionError as e:
-        logger.error('Cannot download file from url: %s' % file_url)
+        logger.error("Cannot download file from url: %s" % file_url)
         logger.error(e)
 
 
@@ -291,14 +303,12 @@ quiet_download = partial(download, quiet=True)
 
 
 def mkurl_pypi_url(url, project_name):
-    loc = posixpath.join(
-        url,
-        urllib.parse.quote(canonicalize_name(project_name)))
+    loc = posixpath.join(url, urllib.parse.quote(canonicalize_name(project_name)))
     # For maximum compatibility with easy_install, ensure the path
     # ends in a trailing slash.  Although this isn't in the spec
     # (and PyPI can handle it without the slash) some other index
     # implementations might break if they relied on easy_install's
     # behavior.
-    if not loc.endswith('/'):
-        loc = loc + '/'
+    if not loc.endswith("/"):
+        loc = loc + "/"
     return loc
