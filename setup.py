@@ -27,7 +27,7 @@ REQUIRES = [
 setup(
     name='pip-download',
     version=version,
-    description='A wrapper for pip download.',
+    description='A wrapper for pip download in offline scenario.',
     long_description=readme,
     author='youngquan',
     author_email='youngquan@qq.com',

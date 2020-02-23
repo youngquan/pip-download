@@ -1,4 +1,4 @@
-# pip-download: 一个跨平台跨Python版本的 Python 包下载工具
+# 一个跨平台跨 Python 版本的 Python 包下载工具
 
 如果你在离线环境下从事 Python 开发工作，你会经常需要不断下载导入 Python 包及其依赖到你的工作环境中去。如果直接使用 `pip download` 进行下载，则只会下载执行该命令时对应平台对应 Python 版本上的 whl 包。举个例子，当你在装有 Python 3.7 的 windows 上执行：
 
