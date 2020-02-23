@@ -1,0 +1,6 @@
+-r base.txt
+black
+mypy
+autoflake
+isort
+pipdeptree

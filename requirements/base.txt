@@ -1,0 +1,11 @@
+click
+requests
+cachecontrol
+packaging
+retrying
+pip-api
+tzlocal
+pip
+
+-e .
+
