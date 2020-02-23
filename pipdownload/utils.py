@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import urllib
 from functools import partial
-from typing import Generator, List
+from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
@@ -22,8 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Retry every half second for up to 3 seconds
 @retry(stop_max_delay=3000, wait_fixed=500)
-def rmtree(directory, ignore_errors=False):
-    # type: (str, bool) -> None
+def rmtree(directory: str, ignore_errors: bool = False) -> None:
     shutil.rmtree(directory, ignore_errors=ignore_errors)
 
 
@@ -89,7 +88,8 @@ class TempDirectory:
         logger.debug("Created temporary directory: {}".format(self.path))
 
     def cleanup(self):
-        """Remove the temporary directory created and reset state
+        """
+        Remove the temporary directory created and reset state
         """
         if self.path is not None and os.path.exists(self.path):
             rmtree(self.path)
@@ -123,17 +123,16 @@ class Hashes:
 
     """
 
-    def __init__(self, hashes=None):
-        # type: (Dict[str, List[str]]) -> None
+    def __init__(self, hashes: Dict[str, List[str]] = None) -> None:
         """
         :param hashes: A dict of algorithm names pointing to lists of allowed
             hex digests
         """
         self._allowed = {} if hashes is None else hashes
 
-    def check_against_chunks(self, chunks):
-        # type: (Iterator[bytes]) -> None
-        """Check good hashes against ones built from iterable of chunks of
+    def check_against_chunks(self, chunks: Iterator[bytes]) -> None:
+        """
+        Check good hashes against ones built from iterable of chunks of
         data.
 
         Raise HashMismatch if none match.
@@ -155,12 +154,10 @@ class Hashes:
                 return
         self._raise(gots)
 
-    def _raise(self, gots):
-        # type: (Dict[str, _Hash]) -> NoReturn
+    def _raise(self, gots) -> NoReturn:
         raise HashMismatch
 
-    def check_against_file(self, file):
-        # type: (BinaryIO) -> None
+    def check_against_file(self, file: BinaryIO) -> None:
         """Check good hashes against a file-like object
 
         Raise HashMismatch if none match.
@@ -168,18 +165,15 @@ class Hashes:
         """
         return self.check_against_chunks(read_chunks(file))
 
-    def check_against_path(self, path):
-        # type: (str) -> None
+    def check_against_path(self, path: str) -> None:
         with open(path, "rb") as file:
             return self.check_against_file(file)
 
-    def __nonzero__(self):
-        # type: () -> bool
+    def __nonzero__(self) -> bool:
         """Return whether I know any known-good hashes."""
         return bool(self._allowed)
 
-    def __bool__(self):
-        # type: () -> bool
+    def __bool__(self) -> bool:
         return self.__nonzero__()
 
 

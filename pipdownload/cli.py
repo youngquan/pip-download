@@ -76,7 +76,7 @@ session = CacheControl(sess)
     type=click.STRING,
     multiple=True,
     help="Version of python to be downloaded. More specifically, this is the abi tag of the Python package. "
-         "It can be specified multiple times. Like: 'cp37', 'cp36', 'cp35' and so on.",
+    "It can be specified multiple times. Like: 'cp37', 'cp36', 'cp35' and so on.",
 )
 @click.option(
     "-q",

@@ -1,6 +1,7 @@
 # pip-download: A wrapper useful in offline scenario
 
-[中文]( https://github.com/youngquan/pip-download/README_zh_CN.md )
+[简体中文]( https://github.com/youngquan/pip-download/blob/master/README_zh_CN.md)
+
 pip-download is a tool which can be used to download python projects and their dependencies listed on
 pypi's `download files` page. If you run the `pip-download` command to download one project on a Linux platform, packages end with `.whl` and can be directly installed on a Windows and a macOS platform will also be downloaded. In that way, you can use these downloaded packages to serve for a minimal pypi sever(like [pypiserver](https://pypi.org/project/pypiserver/) ) on your company internal network.
 
