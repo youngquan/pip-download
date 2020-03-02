@@ -85,3 +85,13 @@ def test_option_on_source(tmp_path: Path):
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
     assert len(files) == 1
+
+
+def test_packege_with_egg_file(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["protobuf", "-d", str(tmp_path), "-py", "cp37"]
+    )
+    assert result.exit_code == 0
+    # files = list(tmp_path.iterdir())
+    # assert len(files) == 1

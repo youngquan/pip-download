@@ -23,7 +23,7 @@ $ python -m venv venv
 # On Windows:
 $ .\venv\Scripts\activate
 # On Linux:
-$ .venv/bin/activate
+$ source venv/bin/activate
 $ pip install pip-download
 ```
 

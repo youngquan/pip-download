@@ -98,7 +98,10 @@ class TempDirectory:
 
 class PythonPackage:
     def __init__(self, name, version):
-        self.name = canonicalize_name(name)
+        if name is None:
+            self.name = name
+        else:
+            self.name = canonicalize_name(name)
         self.version = version
 
     def __repr__(self):
