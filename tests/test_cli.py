@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 from click.testing import CliRunner
 from pipdownload.cli import pipdownload
+from pipdownload.settings import SETTINGS_FILE
 
 
 def test_download_click_package(tmp_path: Path):
@@ -95,3 +97,20 @@ def test_packege_with_egg_file(tmp_path: Path):
     assert result.exit_code == 0
     # files = list(tmp_path.iterdir())
     # assert len(files) == 1
+
+
+def test_download_with_config_file(tmp_path: Path):
+    settings_dict = {
+        "python-versions": ["cp37"],
+        "platform-tags": ["win_amd64"]
+    }
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(settings_dict, f, indent=True)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 2

@@ -1,15 +1,20 @@
 import itertools
+import json
 import logging
 import os
 import subprocess
 import sys
 import warnings
+from collections import OrderedDict
 
 import click
 import pip_api
 import requests
 from cachecontrol import CacheControl
+from pathlib import Path
+
 from pipdownload import logger
+from pipdownload.settings import SETTINGS_FILE
 from pipdownload.utils import (
     TempDirectory,
     download as normal_download,
@@ -63,11 +68,11 @@ session = CacheControl(sess)
     "--platform-tag",
     "platform_tags",
     type=click.STRING,
-    default=["win_amd64", "manylinux1_x86_64"],
     multiple=True,
     help="Suffix of whl packages except 'none-any', like 'win_amd64', 'manylinux1_x86_64', 'linux_i386' "
-    "and so on. It can be specified multiple times. This is an option to replace option 'suffix'.\n"
-    "Default: 'win_amd64' and 'manylinux1_x86_64'.",
+    "and so on. It can be specified multiple times. This is an option to replace option 'suffix'. "
+    "You can even specify 'manylinux' to download packages contain 'manylinux1_x86_64', "
+    "'manylinux2010_x84_64', 'manylinu2014_x86_64'."
 )
 @click.option(
     "-py",
@@ -76,7 +81,7 @@ session = CacheControl(sess)
     type=click.STRING,
     multiple=True,
     help="Version of python to be downloaded. More specifically, this is the abi tag of the Python package. "
-    "It can be specified multiple times. Like: 'cp37', 'cp36', 'cp35' and so on.",
+    "It can be specified multiple times. Like: 'cp38', 'cp37', 'cp36', 'cp35', 'cp27' and so on.",
 )
 @click.option(
     "-q",
@@ -91,6 +96,12 @@ session = CacheControl(sess)
     help="When specified, the source package of the project that provides wheel package will not be "
     "downloaded.",
 )
+@click.option(
+    "--show-config",
+    "show_config",
+    is_flag=True,
+    help="When specified, the config file and config content will be shown.",
+)
 def pipdownload(
     packages,
     index_url,
@@ -101,12 +112,34 @@ def pipdownload(
     python_versions,
     quiet,
     no_source,
+    show_config
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
     pypi's `download files` page. It can be used to download Python packages across system platforms and
     Python versions.
     """
+    if show_config:
+        click.echo(f"The config file is {SETTINGS_FILE}.")
+        if Path(SETTINGS_FILE).exists():
+            with open(SETTINGS_FILE, 'r') as f:
+                settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
+            click.echo(f"The config content is:\n{f.read()}")
+        else:
+            click.echo("There is nothing in the config file.")
+
+    if Path(SETTINGS_FILE).exists():
+        with open(SETTINGS_FILE, 'r') as f:
+            settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
+
+        if not python_versions:
+            python_versions = settings_dict["python_versions"]
+
+        if not whl_suffixes and not platform_tags:
+            platform_tags = settings_dict["platform_tags"]
+
+        click.echo(f"Using config file: {SETTINGS_FILE}.")
+
     tz = get_localzone()
     if tz.zone in ["Asia/Shanghai", "Asia/Chongqing"]:
         index_url = "https://mirrors.aliyun.com/pypi/simple/"

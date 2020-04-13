@@ -39,6 +39,17 @@ $ pip-download -r requirements.txt
 $ pip-download hatch -d /tmp/
 ```
 
+Also, you can put your options in config file, `python_versions` and `platform_tags` are supported now:
+
+```bash
+$ pip-download --show-config
+$ cat /some-path-to/settings.json
+{
+    "python_versions": ["cp37"],
+    "platform_tags": ["win_amd64"]
+}
+```
+
 ## Credits
 
 - All the people who work on [Click](https://github.com/pallets/click)

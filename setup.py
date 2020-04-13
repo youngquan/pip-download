@@ -22,6 +22,7 @@ REQUIRES = [
     'pip-api',
     'tzlocal',
     'pip',
+    'appdirs'
 ]
 
 setup(
