@@ -133,12 +133,12 @@ def pipdownload(
                 settings_dict = {}
 
         if not python_versions:
-            python_versions = settings_dict.get("python_versions", None)
+            python_versions = settings_dict.get("python-versions", None)
             if not python_versions:
                 click.echo(f"Using `python_versions` in config file.")
 
         if not whl_suffixes or not platform_tags:
-            platform_tags = settings_dict.get("platform_tags", None)
+            platform_tags = settings_dict.get("platform-tags", None)
             if not platform_tags:
                 click.echo(f"Using `platform_tags` in config file.")
 
@@ -217,6 +217,7 @@ def pipdownload(
                             download(file, dest_dir)
                             continue
 
+                        click.echo(f"The value of option no_source is {no_source}")
                         if (".tar.gz" in file or ".zip" in file) and not no_source:
                             download(file, dest_dir)
                             continue
