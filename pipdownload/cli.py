@@ -100,7 +100,7 @@ session = CacheControl(sess)
     "--show-config",
     "show_config",
     is_flag=True,
-    help="When specified, the config file and config content will be shown.",
+    help="When specified, the config file will be created if not exists and the path will be shown later.",
 )
 def pipdownload(
     packages,
@@ -120,25 +120,27 @@ def pipdownload(
     Python versions.
     """
     if show_config:
+        if not Path(SETTINGS_FILE).exists():
+            Path(SETTINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
+            Path(SETTINGS_FILE).touch()
         click.echo(f"The config file is {SETTINGS_FILE}.")
-        if Path(SETTINGS_FILE).exists():
-            with open(SETTINGS_FILE, 'r') as f:
-                settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
-            click.echo(f"The config content is:\n{f.read()}")
-        else:
-            click.echo("There is nothing in the config file.")
 
     if Path(SETTINGS_FILE).exists():
         with open(SETTINGS_FILE, 'r') as f:
-            settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
+            try:
+                settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
+            except json.decoder.JSONDecodeError:
+                settings_dict = {}
 
         if not python_versions:
-            python_versions = settings_dict["python_versions"]
+            python_versions = settings_dict.get("python_versions", None)
+            if not python_versions:
+                click.echo(f"Using `python_versions` in config file.")
 
-        if not whl_suffixes and not platform_tags:
-            platform_tags = settings_dict["platform_tags"]
-
-        click.echo(f"Using config file: {SETTINGS_FILE}.")
+        if not whl_suffixes or not platform_tags:
+            platform_tags = settings_dict.get("platform_tags", None)
+            if not platform_tags:
+                click.echo(f"Using `platform_tags` in config file.")
 
     tz = get_localzone()
     if tz.zone in ["Asia/Shanghai", "Asia/Chongqing"]:
@@ -215,15 +217,15 @@ def pipdownload(
                             download(file, dest_dir)
                             continue
 
-                        if not (file_name.endswith(".whl") and no_source):
-
-                            if "tar.gz" in file:
-                                download(file, dest_dir)
-                                continue
-                            if "zip" in file:
-                                download(file, dest_dir)
-                                continue
-
+                        if (file_name.endswith(".tar.gz") or file_name.endswith(".zip")) and not no_source:
+                            download(file, dest_dir)
+                            continue
+                            # if ".tar.gz" in file:
+                            #     download(file, dest_dir)
+                            #     continue
+                            # if ".zip" in file:
+                            #     download(file, dest_dir)
+                            #     continue
                         eligible = True
                         if platform_tags:
                             for tag in platform_tags:
