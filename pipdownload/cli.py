@@ -217,7 +217,7 @@ def pipdownload(
                             download(file, dest_dir)
                             continue
 
-                        if (file_name.endswith(".tar.gz") or file_name.endswith(".zip")) and not no_source:
+                        if (".tar.gz" in file or ".zip" in file) and not no_source:
                             download(file, dest_dir)
                             continue
                             # if ".tar.gz" in file:

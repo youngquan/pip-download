@@ -107,15 +107,16 @@ def test_download_with_config_file(tmp_path: Path):
     assert result.exit_code == 0
 
     runner = CliRunner()
-    result = runner.invoke(
-        pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)]
-    )
     settings_dict = {
         "python-versions": ["cp37"],
         "platform-tags": ["win_amd64"]
     }
     with open(SETTINGS_FILE, "w") as f:
         json.dump(settings_dict, f, indent=True)
+
+    result = runner.invoke(
+        pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)]
+    )
 
     files = list(tmp_path.iterdir())
     assert len(files) == 2
