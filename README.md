@@ -39,14 +39,14 @@ $ pip-download -r requirements.txt
 $ pip-download hatch -d /tmp/
 ```
 
-Also, you can put your options in config file, `python_versions` and `platform_tags` are supported now:
+Also, you can put your common options in the config file, `python_versions` and `platform_tags` are supported now:
 
 ```bash
 $ pip-download --show-config
 $ cat /some-path-to/settings.json
 {
-    "python_versions": ["cp37"],
-    "platform_tags": ["win_amd64"]
+    "python-versions": ["cp37"],
+    "platform-tags": ["win_amd64"]
 }
 ```
 
