@@ -217,7 +217,7 @@ def pipdownload(
                             download(file, dest_dir)
                             continue
 
-                        click.echo(f"The value of option no_source is {no_source}")
+                        logger.info(f"The value of option no_source is {no_source}")
                         if (".tar.gz" in file or ".zip" in file) and not no_source:
                             download(file, dest_dir)
                             continue
