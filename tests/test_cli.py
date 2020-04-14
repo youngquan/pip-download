@@ -6,6 +6,7 @@ from pipdownload.cli import pipdownload
 from pipdownload.settings import SETTINGS_FILE
 
 
+# TODO: How to avoid the situation where there has already been a config file.
 def test_download_click_package(tmp_path: Path):
     runner = CliRunner()
     result = runner.invoke(pipdownload, ["click==7.0", "-d", str(tmp_path)])
@@ -14,7 +15,6 @@ def test_download_click_package(tmp_path: Path):
     assert len(files) == 2
 
 
-# 这里的多余表示的是 requirement 文件包含了多余的换行符
 # "redundant" means there are redundant blank lines in requirement file.
 def test_download_from_requirement_file_redundant(
     requirement_file_redundant, tmp_path: Path

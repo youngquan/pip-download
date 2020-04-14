@@ -214,21 +214,14 @@ def pipdownload(
                     for file in get_file_links(r.text, url, python_package):
 
                         if "none-any" in file:
-                            logger.info("Download file because of none-any")
                             download(file, dest_dir)
                             continue
 
-                        logger.info(f"The value of option no_source is {no_source}")
-                        if (".tar.gz" in file or ".zip" in file) and not no_source:
-                            logger.info("Download file because of source bar")
-                            download(file, dest_dir)
+                        if ".tar.gz" in file or ".zip" in file:
+                            if not no_source:
+                                download(file, dest_dir)
                             continue
-                            # if ".tar.gz" in file:
-                            #     download(file, dest_dir)
-                            #     continue
-                            # if ".zip" in file:
-                            #     download(file, dest_dir)
-                            #     continue
+
                         eligible = True
                         if platform_tags:
                             for tag in platform_tags:
@@ -250,7 +243,6 @@ def pipdownload(
 
                         if eligible:
                             download(file, dest_dir)
-                            logger.info("Download file because of python version and platform tag")
 
                 except ConnectionError as e:
                     logger.error(
