@@ -122,25 +122,29 @@ def pipdownload(
     if show_config:
         if not Path(SETTINGS_FILE).exists():
             Path(SETTINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
-            Path(SETTINGS_FILE).touch()
+            # Path(SETTINGS_FILE).touch()
+            with open(SETTINGS_FILE, "r", encoding="utf8") as f:
+                json.dump({}, f)
         click.echo(f"The config file is {SETTINGS_FILE}.")
+        sys.exit(0)
 
     if Path(SETTINGS_FILE).exists():
         with open(SETTINGS_FILE, 'r') as f:
             try:
                 settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
             except json.decoder.JSONDecodeError:
-                settings_dict = {}
+                logger.error(f"The config file {SETTINGS_FILE} is not correct, it should be a json object.")
+                sys.exit(-2)
 
         if not python_versions:
             python_versions = settings_dict.get("python-versions", None)
-            if not python_versions:
-                click.echo(f"Using `python_versions` in config file.")
+            if python_versions:
+                click.echo(f"Using `python-versions` in config file.")
 
         if not whl_suffixes or not platform_tags:
             platform_tags = settings_dict.get("platform-tags", None)
-            if not platform_tags:
-                click.echo(f"Using `platform_tags` in config file.")
+            if platform_tags:
+                click.echo(f"Using `platform-tags` in config file.")
 
     tz = get_localzone()
     if tz.zone in ["Asia/Shanghai", "Asia/Chongqing"]:
