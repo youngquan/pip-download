@@ -123,7 +123,7 @@ def pipdownload(
         if not Path(SETTINGS_FILE).exists():
             Path(SETTINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
             # Path(SETTINGS_FILE).touch()
-            with open(SETTINGS_FILE, "r", encoding="utf8") as f:
+            with open(SETTINGS_FILE, "w", encoding="utf8") as f:
                 json.dump({}, f)
         click.echo(f"The config file is {SETTINGS_FILE}.")
         sys.exit(0)
