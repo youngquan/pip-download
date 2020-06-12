@@ -264,10 +264,13 @@ def make_absolute(link, base_url):
     return link
 
 
-def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> set:
+def get_file_links(html_doc, base_url, python_package_local: PythonPackage = None) -> set:
     def gen():
         # use version to match hyperlinks in web pages, so the number of matches will get smaller.
-        version = re.escape(python_package_local.version)
+        if python_package_local is not None:
+            version = re.escape(python_package_local.version)
+        else:
+            version = r"(?:\d+\.?)+"
         for link in re.finditer(
             rf'<a.*?href="(.+?)".*?>(.+{version}.+?)</a>', html_doc
         ):
@@ -275,7 +278,7 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
             try:
                 href = link_href.strip()
                 python_package_on_page = resolve_package_file(link_text)
-                if python_package_local == python_package_on_page:
+                if python_package_local is None or python_package_local == python_package_on_page:
                     if href:
                         yield make_absolute(href, base_url)
             except KeyError:
