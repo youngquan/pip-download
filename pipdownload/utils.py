@@ -249,7 +249,9 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
     return set(gen())
 
 
-def download(url, dest_dir, quiet=False):
+def download(url, dest_dir, session=None, quiet=False):
+    if session is None:
+        session = requests
     file_url, file_hash = url.split("#")
     file_name = os.path.basename(file_url)
     hash_algo, hash_value = file_hash.split("=")
@@ -268,7 +270,7 @@ def download(url, dest_dir, quiet=False):
             os.unlink(download_file_path)
 
     try:
-        response = requests.get(file_url, stream=True)
+        response = session.get(file_url, stream=True)
         chunk_size = 1024
         size = 0
         if response.status_code == 200:

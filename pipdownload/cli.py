@@ -229,12 +229,12 @@ def pipdownload(
                     for file in get_file_links(r.text, url, python_package):
                         url_list.append(file)
                         if "none-any" in file:
-                            download(file, dest_dir)
+                            download(file, dest_dir, session)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
                             if not no_source:
-                                download(file, dest_dir)
+                                download(file, dest_dir, session)
                             continue
 
                         eligible = True
@@ -257,7 +257,7 @@ def pipdownload(
                                     eligible = False
 
                         if eligible:
-                            download(file, dest_dir)
+                            download(file, dest_dir, session)
 
                 except ConnectionError as e:
                     logger.error(
