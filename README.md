@@ -37,18 +37,30 @@ After installation, you can use pip-download to download python projects and its
 $ pip-download flask
 $ pip-download -r requirements.txt
 $ pip-download hatch -d /tmp/
+$ pip-dwonload -py cp37 ujson
+$ pip-dwonload -py cp37 -p win_amd64 ujson
 ```
 
 Also, you can put your common options in the config file, `python_versions` and `platform_tags` are supported now:
 
 ```bash
 $ pip-download --show-config
-$ cat /some-path-to/settings.json
+/some-path-to/settings.json
+
+$ vim /some-path-to/settings.json
 {
     "python-versions": ["cp37"],
     "platform-tags": ["win_amd64"]
 }
+
+$ vim /some-path-to/settings.json
+{
+    "python-versions": ["cp37", "cp36"],
+    "platform-tags": ["win_amd64", "manylinux"]
+}
 ```
+
+For more usage, use `pip-download --help`.
 
 ## Credits
 
