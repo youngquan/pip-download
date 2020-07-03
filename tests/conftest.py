@@ -1,6 +1,7 @@
 from pathlib import Path
-from pipdownload import settings
+
 import pytest
+from pipdownload import settings
 
 SRC_DIR = (Path(__file__).parent / "data").resolve()
 

@@ -6,16 +6,14 @@ import subprocess
 import sys
 import warnings
 from collections import OrderedDict
+from pathlib import Path
 
 import click
 import pip_api
 import requests
 from cachecontrol import CacheControl
-from pathlib import Path
-
-from pipdownload import logger
 # from pipdownload.settings import SETTINGS_FILE
-from pipdownload import settings
+from pipdownload import logger, settings
 from pipdownload.utils import (
     TempDirectory,
     download as normal_download,
@@ -73,7 +71,7 @@ session = CacheControl(sess)
     help="Suffix of whl packages except 'none-any', like 'win_amd64', 'manylinux1_x86_64', 'linux_i386' "
     "and so on. It can be specified multiple times. This is an option to replace option 'suffix'. "
     "You can even specify 'manylinux' to download packages contain 'manylinux1_x86_64', "
-    "'manylinux2010_x84_64', 'manylinux2014_x86_64'."
+    "'manylinux2010_x84_64', 'manylinux2014_x86_64'.",
 )
 @click.option(
     "-py",
@@ -113,7 +111,7 @@ def pipdownload(
     python_versions,
     quiet,
     no_source,
-    show_config
+    show_config,
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
@@ -130,11 +128,13 @@ def pipdownload(
         sys.exit(0)
 
     if Path(settings.SETTINGS_FILE).exists():
-        with open(settings.SETTINGS_FILE, 'r') as f:
+        with open(settings.SETTINGS_FILE, "r") as f:
             try:
                 settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
             except json.decoder.JSONDecodeError:
-                logger.error(f"The config file {settings.SETTINGS_FILE} is not correct, it should be a json object.")
+                logger.error(
+                    f"The config file {settings.SETTINGS_FILE} is not correct, it should be a json object."
+                )
                 sys.exit(-2)
 
         if not python_versions:

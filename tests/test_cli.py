@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 from click.testing import CliRunner
-from pipdownload.cli import pipdownload
 from pipdownload import settings
+from pipdownload.cli import pipdownload
 
 
 # TODO: How to avoid the situation where there has already been a config file.
@@ -60,11 +60,11 @@ def test_download_with_option_python_versions(tmp_path):
 def test_download_with_option_python_versions_and_platform_tags(tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        pipdownload, ["pydantic", "-py", "cp36", "-p", "manylinux", "-d", tmp_path]
+        pipdownload, ["ujson", "-py", "cp36", "-p", "manylinux", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 5
+    assert len(files) == 3
 
 
 def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
@@ -81,7 +81,7 @@ def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
 def test_option_platform_tag(tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        pipdownload, ["pydantic==1.5.1", "-p", "win_amd64", "-d", tmp_path]
+        pipdownload, ["ujson==3.0.0", "-p", "win_amd64", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
@@ -111,22 +111,15 @@ def test_packege_with_egg_file(tmp_path: Path):
 
 def test_download_with_config_file(tmp_path: Path):
     runner = CliRunner()
-    result = runner.invoke(
-        pipdownload, ["--show-config"]
-    )
+    result = runner.invoke(pipdownload, ["--show-config"])
     assert result.exit_code == 0
 
     runner = CliRunner()
-    settings_dict = {
-        "python-versions": ["cp37"],
-        "platform-tags": ["win_amd64"]
-    }
+    settings_dict = {"python-versions": ["cp37"], "platform-tags": ["win_amd64"]}
     with open(settings.SETTINGS_FILE, "w") as f:
         json.dump(settings_dict, f, indent=True)
 
-    result = runner.invoke(
-        pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)]
-    )
+    result = runner.invoke(pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)])
 
     files = list(tmp_path.iterdir())
     assert len(files) == 2
