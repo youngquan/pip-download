@@ -14,7 +14,8 @@ from cachecontrol import CacheControl
 from pathlib import Path
 
 from pipdownload import logger
-from pipdownload.settings import SETTINGS_FILE
+# from pipdownload.settings import SETTINGS_FILE
+from pipdownload import settings
 from pipdownload.utils import (
     TempDirectory,
     download as normal_download,
@@ -72,7 +73,7 @@ session = CacheControl(sess)
     help="Suffix of whl packages except 'none-any', like 'win_amd64', 'manylinux1_x86_64', 'linux_i386' "
     "and so on. It can be specified multiple times. This is an option to replace option 'suffix'. "
     "You can even specify 'manylinux' to download packages contain 'manylinux1_x86_64', "
-    "'manylinux2010_x84_64', 'manylinu2014_x86_64'."
+    "'manylinux2010_x84_64', 'manylinux2014_x86_64'."
 )
 @click.option(
     "-py",
@@ -120,20 +121,20 @@ def pipdownload(
     Python versions.
     """
     if show_config:
-        if not Path(SETTINGS_FILE).exists():
-            Path(SETTINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
+        if not Path(settings.SETTINGS_FILE).exists():
+            Path(settings.SETTINGS_FILE).parent.mkdir(parents=True, exist_ok=True)
             # Path(SETTINGS_FILE).touch()
-            with open(SETTINGS_FILE, "w", encoding="utf8") as f:
+            with open(settings.SETTINGS_FILE, "w", encoding="utf8") as f:
                 json.dump({}, f)
-        click.echo(f"The config file is {SETTINGS_FILE}.")
+        click.echo(f"The config file is {settings.SETTINGS_FILE}.")
         sys.exit(0)
 
-    if Path(SETTINGS_FILE).exists():
-        with open(SETTINGS_FILE, 'r') as f:
+    if Path(settings.SETTINGS_FILE).exists():
+        with open(settings.SETTINGS_FILE, 'r') as f:
             try:
                 settings_dict = json.loads(f.read(), object_pairs_hook=OrderedDict)
             except json.decoder.JSONDecodeError:
-                logger.error(f"The config file {SETTINGS_FILE} is not correct, it should be a json object.")
+                logger.error(f"The config file {settings.SETTINGS_FILE} is not correct, it should be a json object.")
                 sys.exit(-2)
 
         if not python_versions:
@@ -141,7 +142,7 @@ def pipdownload(
             if python_versions:
                 click.echo(f"Using `python-versions` in config file.")
 
-        if not whl_suffixes or not platform_tags:
+        if not (platform_tags or whl_suffixes):
             platform_tags = settings_dict.get("platform-tags", None)
             if platform_tags:
                 click.echo(f"Using `platform-tags` in config file.")

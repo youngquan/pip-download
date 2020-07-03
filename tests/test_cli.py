@@ -3,7 +3,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 from pipdownload.cli import pipdownload
-from pipdownload.settings import SETTINGS_FILE
+from pipdownload import settings
 
 
 # TODO: How to avoid the situation where there has already been a config file.
@@ -57,6 +57,16 @@ def test_download_with_option_python_versions(tmp_path):
     assert len(files) == 8
 
 
+def test_download_with_option_python_versions_and_platform_tags(tmp_path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["pydantic", "-py", "cp36", "-p", "manylinux", "-d", tmp_path]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 5
+
+
 def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
     runner = CliRunner()
     dir_name = "tmp"
@@ -71,12 +81,12 @@ def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
 def test_option_platform_tag(tmp_path):
     runner = CliRunner()
     result = runner.invoke(
-        pipdownload, ["MarkupSafe==1.1.1", "-p", "win_amd64", "-d", tmp_path]
+        pipdownload, ["pydantic==1.5.1", "-p", "win_amd64", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
     # TODO: This should be consider again!
-    assert len(files) == 7
+    assert len(files) == 5
 
 
 def test_option_on_source(tmp_path: Path):
@@ -111,7 +121,7 @@ def test_download_with_config_file(tmp_path: Path):
         "python-versions": ["cp37"],
         "platform-tags": ["win_amd64"]
     }
-    with open(SETTINGS_FILE, "w") as f:
+    with open(settings.SETTINGS_FILE, "w") as f:
         json.dump(settings_dict, f, indent=True)
 
     result = runner.invoke(
@@ -120,3 +130,4 @@ def test_download_with_config_file(tmp_path: Path):
 
     files = list(tmp_path.iterdir())
     assert len(files) == 2
+    Path(settings.SETTINGS_FILE).unlink()

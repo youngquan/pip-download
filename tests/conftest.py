@@ -1,8 +1,11 @@
 from pathlib import Path
-
+from pipdownload import settings
 import pytest
 
 SRC_DIR = (Path(__file__).parent / "data").resolve()
+
+# this is a monkey patch of config file
+settings.SETTINGS_FILE = str(SRC_DIR / "settings.json")
 
 
 @pytest.fixture(scope="module")
@@ -13,3 +16,8 @@ def requirement_file_redundant():
 @pytest.fixture(scope="module")
 def requirement_file_normal():
     return str(SRC_DIR / "requirements_normal.txt")
+
+
+# @pytest.fixture(scope="function")
+# def monkeypatch_config_file(monkeypatch):
+#     monkeypatch.setattr(settings, "SETTINGS_FILE", str(SRC_DIR / "settings.json"))
