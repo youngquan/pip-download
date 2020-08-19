@@ -216,6 +216,7 @@ def pipdownload(
 
             for file_name in file_names:
                 python_package = resolve_package_file(file_name)
+                url_list.append(python_package)
                 if python_package.name is None:
                     logger.warning(
                         "Can not resolve a package's name and version from a downloaded package. You shuold "
@@ -266,12 +267,13 @@ def pipdownload(
                     logger.error(e)
                     raise
             logger.info("All packages have been downloaded successfully!")
-            if show_urls:
-                logger.setLevel(logging.INFO)
-                logger.info("List of files downloaded :")
-                for entry in url_list:
-                    logger.info(entry)
-                return url_list
+
+    if show_urls:
+        logger.setLevel(logging.INFO)
+        logger.error("List of files downloaded :")
+        for entry in url_list:
+            logger.info(entry)
+        return url_list
 
 
 if __name__ == "__main__":
