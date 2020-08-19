@@ -267,6 +267,7 @@ def pipdownload(
                     raise
             logger.info("All packages have been downloaded successfully!")
             if show_urls:
+                logger.setLevel(logging.INFO)
                 logger.info("List of files downloaded :")
                 for entry in url_list:
                     logger.info(entry)
