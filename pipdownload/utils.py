@@ -191,6 +191,9 @@ def resolve_package_file(name: str) -> PythonPackage:
     if name.endswith(".tar.gz"):
         result = re.search(r"(?<=-)[^-]+?(?=\.tar\.gz)", name)
 
+    if name.endswith(".tar.bz2"):
+        result = re.search(r"(?<=-)[^-]+?(?=\.tar\.bz2)", name)
+
     if name.endswith(".zip"):
         result = re.search(r"(?<=-)[^-]+?(?=\.zip)", name)
 
