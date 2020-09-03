@@ -101,17 +101,24 @@ session = CacheControl(sess)
     is_flag=True,
     help="When specified, the config file will be created if not exists and the path will be shown later.",
 )
+@click.option(
+    "--show-urls",
+    "show_urls",
+    is_flag=True,
+    help="When specified, all of downloaded urls will be printed as an report list, with library name before them. For use in other tools for checking the libraries.",
+)
 def pipdownload(
-    packages,
-    index_url,
-    requirement_file,
-    dest_dir,
-    whl_suffixes,
-    platform_tags,
-    python_versions,
-    quiet,
-    no_source,
-    show_config,
+        packages,
+        index_url,
+        requirement_file,
+        dest_dir,
+        whl_suffixes,
+        platform_tags,
+        python_versions,
+        quiet,
+        no_source,
+        show_config,
+        show_urls
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
@@ -163,6 +170,8 @@ def pipdownload(
     else:
         download = normal_download
 
+    url_list = []
+
     if not dest_dir:
         dest_dir = os.getcwd()
     else:
@@ -207,6 +216,7 @@ def pipdownload(
 
             for file_name in file_names:
                 python_package = resolve_package_file(file_name)
+                url_list.append(python_package)
                 if python_package.name is None:
                     logger.warning(
                         "Can not resolve a package's name and version from a downloaded package. You shuold "
@@ -217,7 +227,7 @@ def pipdownload(
                 try:
                     r = session.get(url)
                     for file in get_file_links(r.text, url, python_package):
-
+                        url_list.append(file)
                         if "none-any" in file:
                             download(file, dest_dir)
                             continue
@@ -257,6 +267,13 @@ def pipdownload(
                     logger.error(e)
                     raise
             logger.info("All packages have been downloaded successfully!")
+
+    if show_urls:
+        logger.setLevel(logging.INFO)
+        logger.error("List of files downloaded :")
+        for entry in url_list:
+            logger.info(entry)
+        return url_list
 
 
 if __name__ == "__main__":
