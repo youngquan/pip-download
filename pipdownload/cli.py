@@ -21,6 +21,7 @@ from pipdownload.utils import (
     mkurl_pypi_url,
     quiet_download,
     resolve_package_file,
+    wheel_package_exists
 )
 from tzlocal import get_localzone
 
@@ -96,6 +97,13 @@ session = CacheControl(sess)
     "downloaded.",
 )
 @click.option(
+    "--source-as-fallback",
+    "source_as_fallback",
+    is_flag=True,
+    help="When specified, the source package is downloaded if no wheel package exists, "
+         "even if the --no-source option is set.",
+)
+@click.option(
     "--show-config",
     "show_config",
     is_flag=True,
@@ -117,6 +125,7 @@ def pipdownload(
         python_versions,
         quiet,
         no_source,
+        source_as_fallback,
         show_config,
         show_urls
 ):
@@ -226,16 +235,24 @@ def pipdownload(
                 url = mkurl_pypi_url(index_url, python_package.name)
                 try:
                     r = session.get(url)
-                    for file in get_file_links(r.text, url, python_package):
+                    file_links = get_file_links(r.text, url, python_package)
+                    for file in file_links:
                         url_list.append(file)
                         if "none-any" in file:
                             download(file, dest_dir)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
-                            if not no_source:
+                            download_source = False
+                            if no_source:
+                                if source_as_fallback and not wheel_package_exists(file_links):
+                                    download_source = True
+                            else:
+                                download_source = True
+
+                            if download_source:
                                 download(file, dest_dir)
-                            continue
+                                continue
 
                         eligible = True
                         if platform_tags:

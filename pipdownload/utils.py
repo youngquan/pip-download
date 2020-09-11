@@ -8,7 +8,7 @@ import shutil
 import tempfile
 import urllib
 from functools import partial
-from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn
+from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn, Set
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import click
@@ -312,3 +312,7 @@ def mkurl_pypi_url(url, project_name):
     if not loc.endswith("/"):
         loc = loc + "/"
     return loc
+
+
+def wheel_package_exists(package_links: Set[str]) -> bool:
+    return any([".whl" in link for link in package_links])
