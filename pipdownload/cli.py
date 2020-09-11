@@ -247,6 +247,8 @@ def pipdownload(
                             if no_source:
                                 if source_as_fallback and not wheel_package_exists(file_links):
                                     download_source = True
+                                else:
+                                    continue
                             else:
                                 download_source = True
 

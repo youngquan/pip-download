@@ -64,7 +64,7 @@ def test_download_with_option_python_versions_and_platform_tags(tmp_path):
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 3
+    assert len(files) == 4
 
 
 def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
@@ -93,6 +93,26 @@ def test_option_on_source(tmp_path: Path):
     runner = CliRunner()
     result = runner.invoke(
         pipdownload, ["click==7.0", "--no-source", "-d", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 1
+
+
+def test_option_no_source_no_wheel(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["pyusb==1.0.2", "--no-source", "-d", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 0
+
+
+def test_option_no_source_no_wheel_source_as_fallback(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["pyusb==1.0.2", "--no-source", "--source-as-fallback", "-d", str(tmp_path)]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
