@@ -107,6 +107,12 @@ session = CacheControl(sess)
     is_flag=True,
     help="When specified, all of downloaded urls will be printed as an report list, with library name before them. For use in other tools for checking the libraries.",
 )
+@click.option(
+    "--preserve-dir",
+    "preserve_dir",
+    is_flag=True,
+    help="When specified, source directory hierarchy will be preserved (useful for mirroring repo)",
+)
 def pipdownload(
         packages,
         index_url,
@@ -118,7 +124,8 @@ def pipdownload(
         quiet,
         no_source,
         show_config,
-        show_urls
+        show_urls,
+        preserve_dir
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
@@ -229,12 +236,12 @@ def pipdownload(
                     for file in get_file_links(r.text, url, python_package):
                         url_list.append(file)
                         if "none-any" in file:
-                            download(file, dest_dir)
+                            download(file, dest_dir, preserve_dir)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
                             if not no_source:
-                                download(file, dest_dir)
+                                download(file, dest_dir, preserve_dir)
                             continue
 
                         eligible = True
@@ -257,7 +264,7 @@ def pipdownload(
                                     eligible = False
 
                         if eligible:
-                            download(file, dest_dir)
+                            download(file, dest_dir, preserve_dir)
 
                 except ConnectionError as e:
                     logger.error(
