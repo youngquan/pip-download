@@ -253,9 +253,10 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
 def download(url, dest_dir, session=None, quiet=False):
     if session is None:
         session = requests
-    file_url, file_hash = url.split("#")
-    file_name = os.path.basename(file_url)
-    hash_algo, hash_value = file_hash.split("=")
+
+    parsed_url = urlparse(url)
+    file_name = unquote(os.path.basename(parsed_url.path))
+    hash_algo, hash_value = parsed_url.fragment.split("=")
     hashes = Hashes({hash_algo: hash_value})
     download_file_path = os.path.join(dest_dir, file_name)
     if os.path.exists(download_file_path):
@@ -271,7 +272,7 @@ def download(url, dest_dir, session=None, quiet=False):
             os.unlink(download_file_path)
 
     try:
-        response = session.get(file_url, stream=True)
+        response = session.get(url, stream=True)
         chunk_size = 1024
         size = 0
         if response.status_code == 200:
@@ -298,7 +299,7 @@ def download(url, dest_dir, session=None, quiet=False):
                 f"The status code is {response.status_code}, and the text is {response.text}."
             )
     except ConnectionError as e:
-        logger.error("Cannot download file from url: %s" % file_url)
+        logger.error("Cannot download file from url: %s" % url)
         logger.error(e)
 
 
