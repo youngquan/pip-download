@@ -179,6 +179,40 @@ class Hashes:
     def __bool__(self) -> bool:
         return self.__nonzero__()
 
+    def __getattr__(self, name):
+        try:
+            return self._allowed[name]
+        except KeyError:
+            return super(Hashes, self).__getattr__(name)
+
+    DEFAULT_HASHES = {"sha256", "sha1", "md5"}
+
+    @classmethod
+    def from_chunks(
+        cls, chunks: Iterator[bytes], hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        hasher_objs = {
+            hash_name: hashlib.new(hash_name) for hash_name in hashes
+        }
+        for chunk in chunks:
+            for hasher in hasher_objs.values():
+                hasher.update(chunk)
+        return cls({
+            name: hasher.hexdigest() for name, hasher in hasher_objs.items()
+        })
+
+    @classmethod
+    def from_file(
+        cls, file_: BinaryIO, hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        return cls.from_chunks(read_chunks(file_), hashes=hashes)
+
+    @classmethod
+    def from_path(
+        cls, path: str, hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        return cls.from_file(open(path, "rb"), hashes=hashes)
+
 
 def resolve_package_file(name: str) -> PythonPackage:
     """
