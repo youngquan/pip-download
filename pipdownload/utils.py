@@ -9,7 +9,7 @@ import tempfile
 import urllib
 from functools import partial
 from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urljoin, urlparse, urlunparse, unquote
 
 import click
 import requests
@@ -188,6 +188,7 @@ def resolve_package_file(name: str) -> PythonPackage:
     """
     # result is used to match the version string in the full name of python package
     result = None
+    name = unquote(name)
     if name.endswith(".tar.gz"):
         result = re.search(r"(?<=-)[^-]+?(?=\.tar\.gz)", name)
 
