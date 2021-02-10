@@ -155,10 +155,10 @@ class Hashes:
         for hash_name, got in gots.items():
             if got.hexdigest() in self._allowed[hash_name]:
                 return
-        self._raise(gots)
+        self._raise(self._allowed, gots)
 
-    def _raise(self, gots) -> NoReturn:
-        raise HashMismatch
+    def _raise(self, allowed, gots) -> NoReturn:
+        raise HashMismatch(allowed, gots)
 
     def check_against_file(self, file: BinaryIO) -> None:
         """Check good hashes against a file-like object
