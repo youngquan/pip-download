@@ -158,7 +158,7 @@ class Hashes:
         self._raise(gots)
 
     def _raise(self, gots) -> NoReturn:
-        raise HashMismatch
+        raise HashMismatch({}, gots)
 
     def check_against_file(self, file: BinaryIO) -> None:
         """Check good hashes against a file-like object
