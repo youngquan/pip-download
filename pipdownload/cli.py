@@ -155,7 +155,7 @@ def pipdownload(
                 click.echo(f"Using `platform-tags` in config file.")
 
     tz = get_localzone()
-    if tz.zone in ["Asia/Shanghai", "Asia/Chongqing"]:
+    if str(tz) in ["Asia/Shanghai", "Asia/Chongqing"]:
         index_url = "https://mirrors.aliyun.com/pypi/simple/"
 
     if whl_suffixes:
