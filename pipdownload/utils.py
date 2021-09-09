@@ -9,7 +9,7 @@ import tempfile
 import urllib
 from functools import partial
 from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn
-from urllib.parse import urljoin, urlparse, urlunparse
+from urllib.parse import urljoin, urlparse, urlunparse, unquote
 
 import click
 import requests
@@ -179,6 +179,40 @@ class Hashes:
     def __bool__(self) -> bool:
         return self.__nonzero__()
 
+    def __getattr__(self, name):
+        try:
+            return self._allowed[name]
+        except KeyError:
+            return super(Hashes, self).__getattr__(name)
+
+    DEFAULT_HASHES = {"sha256", "sha1", "md5"}
+
+    @classmethod
+    def from_chunks(
+        cls, chunks: Iterator[bytes], hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        hasher_objs = {
+            hash_name: hashlib.new(hash_name) for hash_name in hashes
+        }
+        for chunk in chunks:
+            for hasher in hasher_objs.values():
+                hasher.update(chunk)
+        return cls({
+            name: hasher.hexdigest() for name, hasher in hasher_objs.items()
+        })
+
+    @classmethod
+    def from_file(
+        cls, file_: BinaryIO, hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        return cls.from_chunks(read_chunks(file_), hashes=hashes)
+
+    @classmethod
+    def from_path(
+        cls, path: str, hashes: Iterator[str]=DEFAULT_HASHES,
+    ) -> "Hashes":
+        return cls.from_file(open(path, "rb"), hashes=hashes)
+
 
 def resolve_package_file(name: str) -> PythonPackage:
     """
@@ -188,6 +222,7 @@ def resolve_package_file(name: str) -> PythonPackage:
     """
     # result is used to match the version string in the full name of python package
     result = None
+    name = unquote(name)
     if name.endswith(".tar.gz"):
         result = re.search(r"(?<=-)[^-]+?(?=\.tar\.gz)", name)
 
@@ -229,10 +264,13 @@ def make_absolute(link, base_url):
     return link
 
 
-def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> set:
+def get_file_links(html_doc, base_url, python_package_local: PythonPackage = None) -> set:
     def gen():
         # use version to match hyperlinks in web pages, so the number of matches will get smaller.
-        version = re.escape(python_package_local.version)
+        if python_package_local is not None:
+            version = re.escape(python_package_local.version)
+        else:
+            version = r"(?:\d+\.?)+"
         for link in re.finditer(
             rf'<a.*?href="(.+?)".*?>(.+{version}.+?)</a>', html_doc
         ):
@@ -240,7 +278,7 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
             try:
                 href = link_href.strip()
                 python_package_on_page = resolve_package_file(link_text)
-                if python_package_local == python_package_on_page:
+                if python_package_local is None or python_package_local == python_package_on_page:
                     if href:
                         yield make_absolute(href, base_url)
             except KeyError:
@@ -249,10 +287,13 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
     return set(gen())
 
 
-def download(url, dest_dir, quiet=False):
-    file_url, file_hash = url.split("#")
-    file_name = os.path.basename(file_url)
-    hash_algo, hash_value = file_hash.split("=")
+def download(url, dest_dir, session=None, quiet=False):
+    if session is None:
+        session = requests
+
+    parsed_url = urlparse(url)
+    file_name = unquote(os.path.basename(parsed_url.path))
+    hash_algo, hash_value = parsed_url.fragment.split("=")
     hashes = Hashes({hash_algo: hash_value})
     download_file_path = os.path.join(dest_dir, file_name)
     if os.path.exists(download_file_path):
@@ -268,7 +309,7 @@ def download(url, dest_dir, quiet=False):
             os.unlink(download_file_path)
 
     try:
-        response = requests.get(file_url, stream=True)
+        response = session.get(url, stream=True)
         chunk_size = 1024
         size = 0
         if response.status_code == 200:
@@ -295,7 +336,7 @@ def download(url, dest_dir, quiet=False):
                 f"The status code is {response.status_code}, and the text is {response.text}."
             )
     except ConnectionError as e:
-        logger.error("Cannot download file from url: %s" % file_url)
+        logger.error("Cannot download file from url: %s" % url)
         logger.error(e)
 
 
