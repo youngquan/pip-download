@@ -249,11 +249,15 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
     return set(gen())
 
 
-def download(url, dest_dir, quiet=False):
+def download(url, dest_dir, preserve_dir, quiet=False):
     file_url, file_hash = url.split("#")
     file_name = os.path.basename(file_url)
     hash_algo, hash_value = file_hash.split("=")
     hashes = Hashes({hash_algo: hash_value})
+    if preserve_dir:
+        dest_dir = os.path.join(dest_dir, urlparse(os.path.dirname(url)).path[1:])
+        if not os.path.exists(dest_dir):
+            os.makedirs(dest_dir)
     download_file_path = os.path.join(dest_dir, file_name)
     if os.path.exists(download_file_path):
         try:
