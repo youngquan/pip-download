@@ -16,6 +16,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 REQUIRES = [
     'click',
     'requests',
+    'requests-file',
     'cachecontrol',
     'packaging',
     'retrying',

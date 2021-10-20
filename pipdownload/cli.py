@@ -4,17 +4,20 @@ import logging
 import os
 import subprocess
 import sys
+import urllib.parse
 import warnings
-from collections import OrderedDict
-from pathlib import Path
+from collections import OrderedDict, defaultdict
+from pathlib import Path, PurePath
 
 import click
 import pip_api
 import requests
+import requests_file
 from cachecontrol import CacheControl
 # from pipdownload.settings import SETTINGS_FILE
 from pipdownload import logger, settings
 from pipdownload.utils import (
+    Hashes,
     TempDirectory,
     download as normal_download,
     get_file_links,
@@ -25,6 +28,7 @@ from pipdownload.utils import (
 from tzlocal import get_localzone
 
 sess = requests.Session()
+sess.mount("file://", requests_file.FileAdapter())
 session = CacheControl(sess)
 
 
@@ -37,6 +41,14 @@ session = CacheControl(sess)
     default="https://pypi.org/simple",
     type=click.STRING,
     help="Pypi index.",
+)
+@click.option(
+    "-f",
+    "--find-links",
+    "find_links",
+    type=click.STRING,
+    multiple=True,
+    help="URL or path to a HTML file parsed for links to packages",
 )
 @click.option(
     "-r",
@@ -110,6 +122,7 @@ session = CacheControl(sess)
 def pipdownload(
         packages,
         index_url,
+        find_links,
         requirement_file,
         dest_dir,
         whl_suffixes,
@@ -190,6 +203,13 @@ def pipdownload(
             )
             logger.info("-" * 50)
 
+            find_links = tuple(
+                # If there is no scheme value, we assume it's a path which
+                # needs to be rendered as a URI
+                Path(fl_val).resolve().as_uri()
+                for fl_val in find_links
+                if not urllib.parse.urlparse(fl_val)[0]
+            )
             try:
                 command = [
                     sys.executable,
@@ -201,6 +221,10 @@ def pipdownload(
                     "--dest",
                     directory.path,
                     package,
+                ]
+                command += [
+                    "--find-links={}".format(fl_val)
+                    for fl_val in find_links
                 ]
                 if quiet:
                     command.extend(["--progress-bar", "off", "-qqq"])
@@ -214,6 +238,39 @@ def pipdownload(
                 raise
             file_names = os.listdir(directory.path)
 
+            # Enumerate all of the packages available from `find-links` args.
+            # In reality this should regex for link-like things like `pip` does
+            # but this limited implementation is enough for the moment when
+            # we're using `file:///` URIs/paths
+            found_links = defaultdict(list)
+            for fl_uri in find_links:
+                try:
+                    fl_resp = session.get(fl_uri)
+                except ConnectionError:
+                    continue
+                if fl_resp.status_code == 200:
+                    fl_index = fl_resp.text
+                else:
+                    # The `requests_file` adapter doesn't automatically create
+                    # directory indicies so we have to notice that and fake it
+                    parsed_uri = urllib.parse.urlparse(fl_uri)
+                    reparsed_path = Path(parsed_uri.path)
+                    if parsed_uri.scheme == "file" and reparsed_path.is_dir():
+                        if reparsed_path.is_dir():
+                            fl_index = "\n".join(
+                                '<a href="{uri}#sha256={hash_}">{name}</a>'
+                                .format(
+                                    uri=p.as_uri(), name=p.name,
+                                    hash_=Hashes.from_path(str(p)).sha256,
+                                ) for p in reparsed_path.iterdir()
+                            )
+                    else:
+                        continue
+                for l in get_file_links(fl_index, fl_uri):
+                    pkg_fname = PurePath(urllib.parse.urlparse(l).path).name
+                    pkg_info = resolve_package_file(pkg_fname)
+                    found_links[pkg_info.name].append((pkg_info, l))
+
             for file_name in file_names:
                 python_package = resolve_package_file(file_name)
                 url_list.append(python_package)
@@ -223,18 +280,32 @@ def pipdownload(
                         "create an issue maybe."
                     )
                     continue
+
+                if python_package.name in found_links:
+                    uris_to_download = (
+                        pkg_uri for pkg_info, pkg_uri
+                        in found_links[python_package.name]
+                        if pkg_info == python_package
+                    )
+                    if uris_to_download:
+                        for dl_uri in uris_to_download:
+                            download(dl_uri, dest_dir, session)
+                        url_list.extend(found_links[python_package.name])
+                        continue
+
                 url = mkurl_pypi_url(index_url, python_package.name)
+
                 try:
                     r = session.get(url)
                     for file in get_file_links(r.text, url, python_package):
                         url_list.append(file)
                         if "none-any" in file:
-                            download(file, dest_dir)
+                            download(file, dest_dir, session)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
                             if not no_source:
-                                download(file, dest_dir)
+                                download(file, dest_dir, session)
                             continue
 
                         eligible = True
@@ -257,7 +328,7 @@ def pipdownload(
                                     eligible = False
 
                         if eligible:
-                            download(file, dest_dir)
+                            download(file, dest_dir, session)
 
                 except ConnectionError as e:
                     logger.error(
