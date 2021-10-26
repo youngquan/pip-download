@@ -25,7 +25,21 @@ from pipdownload.utils import (
     quiet_download,
     resolve_package_file,
 )
-from tzlocal import get_localzone
+
+
+# Get default index URL from environment, Asia timezone default index, or regular default index
+DEFAULT_INDEX_URL = os.environ.get("PIP_INDEX_URL", None)
+try:
+    if not DEFAULT_INDEX_URL:
+        from tzlocal import get_localzone
+        tz = get_localzone()
+        if str(tz) in ["Asia/Shanghai", "Asia/Chongqing"]:
+            DEFAULT_INDEX_URL = "https://mirrors.aliyun.com/pypi/simple/"
+except:
+    pass
+if not DEFAULT_INDEX_URL:
+    DEFAULT_INDEX_URL = "https://pypi.org/simple"
+
 
 sess = requests.Session()
 sess.mount("file://", requests_file.FileAdapter())
@@ -38,7 +52,7 @@ session = CacheControl(sess)
     "-i",
     "--index-url",
     "index_url",
-    default="https://pypi.org/simple",
+    default=DEFAULT_INDEX_URL,
     type=click.STRING,
     help="Pypi index.",
 )
@@ -166,10 +180,6 @@ def pipdownload(
             platform_tags = settings_dict.get("platform-tags", None)
             if platform_tags:
                 click.echo(f"Using `platform-tags` in config file.")
-
-    tz = get_localzone()
-    if str(tz) in ["Asia/Shanghai", "Asia/Chongqing"]:
-        index_url = "https://mirrors.aliyun.com/pypi/simple/"
 
     if whl_suffixes:
         warnings.warn(
