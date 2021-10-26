@@ -193,6 +193,13 @@ def pipdownload(
     else:
         download = normal_download
 
+    find_links = tuple(
+        # If there is no scheme value, we assume it's a path which
+        # needs to be rendered as a URI
+        Path(fl_val).resolve().as_uri() if not urllib.parse.urlparse(fl_val)[0] else fl_val
+        for fl_val in find_links
+    )
+
     url_list = []
 
     if not dest_dir:
@@ -213,13 +220,6 @@ def pipdownload(
             )
             logger.info("-" * 50)
 
-            find_links = tuple(
-                # If there is no scheme value, we assume it's a path which
-                # needs to be rendered as a URI
-                Path(fl_val).resolve().as_uri()
-                for fl_val in find_links
-                if not urllib.parse.urlparse(fl_val)[0]
-            )
             try:
                 command = [
                     sys.executable,

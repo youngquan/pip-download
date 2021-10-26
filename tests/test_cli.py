@@ -87,7 +87,8 @@ def test_download_using_find_links(tmp_path):
 
     req_file = tmp_path / "requirements.txt"
     with open(req_file, "w") as f:
-        f.write("aiohttp==3.7.4")
+        f.write("aiohttp==3.7.4\n")
+        f.write("attrs>=17.3.0\n")
 
     # Download with main package requirement to include our "custom build"
     result = runner.invoke(pipdownload, ["-d", dest_path,
@@ -106,7 +107,7 @@ def test_download_using_find_links(tmp_path):
     ]:
         dest_pkg_file = next(Path(dest_path).glob(os.path.basename(local_file)))
         dest_pkg_hash = Hashes.from_path(str(dest_pkg_file)).sha256
-        assert local_hash == dest_pkg_hash, f"Destination {dest_pkg_file} did not match local link at {local_file}"
+        assert local_hash == dest_pkg_hash, f"Destination {dest_pkg_file} did not download from local link at {local_file}"
 
 
 
