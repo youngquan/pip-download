@@ -23,17 +23,22 @@ def requirement_file_normal():
 
 
 def get_file_num_from_site_pypi_org(
-    packege_name: str, constraints: list = None, no_source: bool = False
+    packege_name: str,  constraints: list = None, no_source: bool = False, package_version: str = None
 ):
     """
     Get the number of files on the package's official download page from pypi.org.
     :param packege_name: the name of the package to be downloaded.
     :param constraints: some constraints of the packages to be downloaded.
     :param no_source: whether to download the source file.
+    :param package_version: the version of the package to be downloaded.
     :return: the number of files to be downloaded.
     """
-    base_url = "https://pypi.org/project/{}/#files"
-    full_url = base_url.format(packege_name)
+    if package_version:
+        base_url = "https://pypi.org/project/{}/{}/#files"
+        full_url = base_url.format(packege_name, package_version)
+    else:
+        base_url = "https://pypi.org/project/{}/#files"
+        full_url = base_url.format(packege_name)
     r = requests.get(full_url)
     soup = BeautifulSoup(r.text, "html.parser")
     if no_source:

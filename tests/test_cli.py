@@ -4,6 +4,7 @@ from pathlib import Path
 from click.testing import CliRunner
 from pipdownload import settings
 from pipdownload.cli import pipdownload
+from pipdownload.utils import resolve_package_file
 
 from tests.conftest import get_file_num_from_site_pypi_org
 
@@ -48,7 +49,9 @@ def test_download_with_option_whl_suffixes(tmp_path):
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
     # TODO: This should be consider again!
-    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"])
+    python_package = resolve_package_file(files[0].name)
+
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"], package_version=python_package.version)
 
 
 def test_download_with_option_python_versions(tmp_path):
@@ -68,8 +71,9 @@ def test_download_with_option_python_versions_and_platform_tags(tmp_path):
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
+    python_package = resolve_package_file(files[0].name)
     assert len(files) == get_file_num_from_site_pypi_org(
-        package_name, ["cp36", "manylinux"]
+        package_name, ["cp36", "manylinux"], package_version=python_package.version
     )
 
 
@@ -93,7 +97,9 @@ def test_option_platform_tag(tmp_path):
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"])
+    python_package = resolve_package_file(files[0].name)
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"],
+                                                         package_version=python_package.version)
 
 
 def test_option_on_source(tmp_path: Path):
