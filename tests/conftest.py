@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 import requests
 from bs4 import BeautifulSoup
-
 from pipdownload import settings
 
 SRC_DIR = (Path(__file__).parent / "data").resolve()
@@ -23,7 +22,9 @@ def requirement_file_normal():
     return str(SRC_DIR / "requirements_normal.txt")
 
 
-def get_file_num_from_site_pypi_org(packege_name: str, constraints: list = None, no_source: bool = False):
+def get_file_num_from_site_pypi_org(
+    packege_name: str, constraints: list = None, no_source: bool = False
+):
     """
     Get the number of files on the package's official download page from pypi.org.
     :param packege_name: the name of the package to be downloaded.
@@ -34,7 +35,7 @@ def get_file_num_from_site_pypi_org(packege_name: str, constraints: list = None,
     base_url = "https://pypi.org/project/{}/#files"
     full_url = base_url.format(packege_name)
     r = requests.get(full_url)
-    soup = BeautifulSoup(r.text, 'html.parser')
+    soup = BeautifulSoup(r.text, "html.parser")
     if no_source:
         num = 0
     else:

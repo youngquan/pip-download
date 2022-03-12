@@ -2,7 +2,6 @@ import itertools
 import json
 import logging
 import os
-import subprocess
 import sys
 import warnings
 from collections import OrderedDict
@@ -13,15 +12,15 @@ import pip_api
 import requests
 from cachecontrol import CacheControl
 # from pipdownload.settings import SETTINGS_FILE
-from pipdownload import logger, settings
-from pipdownload.utils import (
-    TempDirectory,
-    download as normal_download,
-    get_file_links,
-    mkurl_pypi_url,
-    quiet_download,
-    resolve_package_file,
-)
+from pipdownload import logger
+from pipdownload import settings
+from pipdownload.utils import TempDirectory
+from pipdownload.utils import download as normal_download
+from pipdownload.utils import download_package
+from pipdownload.utils import get_file_links
+from pipdownload.utils import mkurl_pypi_url
+from pipdownload.utils import quiet_download
+from pipdownload.utils import resolve_package_file
 from tzlocal import get_localzone
 
 sess = requests.Session()
@@ -92,8 +91,7 @@ session = CacheControl(sess)
     "--no-source",
     "no_source",
     is_flag=True,
-    help="When specified, the source package of the project that provides wheel package will not be "
-    "downloaded.",
+    help="When specified, the source package of the project will not be " "downloaded.",
 )
 @click.option(
     "--show-config",
@@ -108,17 +106,17 @@ session = CacheControl(sess)
     help="When specified, all of downloaded urls will be printed as an report list, with library name before them. For use in other tools for checking the libraries.",
 )
 def pipdownload(
-        packages,
-        index_url,
-        requirement_file,
-        dest_dir,
-        whl_suffixes,
-        platform_tags,
-        python_versions,
-        quiet,
-        no_source,
-        show_config,
-        show_urls
+    packages,
+    index_url,
+    requirement_file,
+    dest_dir,
+    whl_suffixes,
+    platform_tags,
+    python_versions,
+    quiet,
+    no_source,
+    show_config,
+    show_urls,
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
@@ -189,29 +187,12 @@ def pipdownload(
                 "We are using pip download command to download package %s" % package
             )
             logger.info("-" * 50)
-
-            try:
-                command = [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "download",
-                    "-i",
-                    index_url,
-                    "--dest",
-                    directory.path,
-                    package,
-                ]
-                if quiet:
-                    command.extend(["--progress-bar", "off", "-qqq"])
-                subprocess.check_call(command)
-            except subprocess.CalledProcessError as e:
-                logger.error(
-                    "Sorry, we can not use pip download to download the package %s,"
-                    " and Exception is below" % package
-                )
-                logger.error(e)
-                raise
+            if download_package(
+                index_url, directory, package, quiet, "original"
+            ) or download_package(index_url, directory, package, quiet, "linux_x86_64"):
+                pass
+            else:
+                raise Exception
             file_names = os.listdir(directory.path)
 
             for file_name in file_names:
