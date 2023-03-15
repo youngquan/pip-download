@@ -21,7 +21,6 @@ from pipdownload.utils import get_file_links
 from pipdownload.utils import mkurl_pypi_url
 from pipdownload.utils import quiet_download
 from pipdownload.utils import resolve_package_file
-from tzlocal import get_localzone
 
 sess = requests.Session()
 session = CacheControl(sess)
@@ -33,7 +32,6 @@ session = CacheControl(sess)
     "-i",
     "--index-url",
     "index_url",
-    default="https://pypi.org/simple",
     type=click.STRING,
     help="Pypi index.",
 )
@@ -152,9 +150,6 @@ def pipdownload(
             if platform_tags:
                 click.echo(f"Using `platform-tags` in config file.")
 
-    tz = get_localzone()
-    if str(tz) in ["Asia/Shanghai", "Asia/Chongqing"]:
-        index_url = "https://mirrors.aliyun.com/pypi/simple/"
 
     if whl_suffixes:
         warnings.warn(
