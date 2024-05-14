@@ -28,6 +28,7 @@ from packaging.utils import canonicalize_name
 from pip._internal import main as pip_main
 from pipdownload.exceptions import HashMismatch
 from retrying import retry
+from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
 
@@ -261,6 +262,13 @@ def get_file_links(html_doc, base_url, python_package_local: PythonPackage) -> s
     return set(gen())
 
 
+def download_with_retry(file_url, retry_count=50):
+    with requests.sessions.Session() as session:
+        for protocol in session.adapters:
+            session.adapters[protocol].max_retries = Retry.from_int(retry_count)
+        return session.request(method="get", url=file_url, stream=True)
+
+
 def download(url, dest_dir, quiet=False):
     file_url, file_hash = url.split("#")
     file_name = os.path.basename(file_url)
@@ -280,7 +288,7 @@ def download(url, dest_dir, quiet=False):
             os.unlink(download_file_path)
 
     try:
-        response = requests.get(file_url, stream=True)
+        response = download_with_retry(file_url):
         chunk_size = 1024
         size = 0
         if response.status_code == 200:
