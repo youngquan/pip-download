@@ -101,7 +101,8 @@ session = CacheControl(sess)
     "--show-urls",
     "show_urls",
     is_flag=True,
-    help="When specified, all of downloaded urls will be printed as an report list, with library name before them. For use in other tools for checking the libraries.",
+    help=("When specified, all of downloaded urls will be printed as an report list, with library name before them. " +
+          "For use in other tools for checking the libraries."),
 )
 def pipdownload(
     packages,
@@ -205,7 +206,10 @@ def pipdownload(
                     for file in get_file_links(r.text, url, python_package):
                         url_list.append(file)
                         if "none-any" in file:
-                            download(file, dest_dir)
+                            if "py2.py3" in file_name or not python_versions:
+                                download(file, dest_dir)
+                            elif [1 for x in python_versions if "-"+x+"-" in file]:
+                                download(file, dest_dir)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:

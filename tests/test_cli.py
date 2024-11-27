@@ -19,9 +19,59 @@ def test_download_colorama_package(tmp_path: Path):
     assert len(files) == get_file_num_from_site_pypi_org(package_name)
 
 
+# Add-on for ignoring unused version - Conflict between platform and version check #13
+# --python-version py3 --python-version cp37 --platform-tag manylinux1_x86_64 --dest . --no-source beautifulsoup4==4.8.2
+# Should download beautifulsoup4-4.8.2-py3-none-any.whl, soupsieve-2.0.1-py3-none-any.whl
+# NOT TO BE DOWNLOADED :  beautifulsoup4-4.8.2-py2-none-any.whl
+def test_download_bs4_package(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(pipdownload, ["--python-version", "py3", "--python-version", "cp37",
+                                         "--platform-tag", "manylinux1_x86_64", "-d", str(tmp_path), "--no-source",
+                                         "beautifulsoup4==4.8.2"])
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 2
+
+
+# Add-on for ignoring unused version - Conflict between platform and version check #13
+# --python-version py3 --python-version cp37 --platform-tag manylinux1_x86_64 --dest . --no-source beautifulsoup4==4.8.2
+# Should download beautifulsoup4-4.8.2-py3-none-any.whl, soupsieve-2.0.1-py3-none-any.whl
+# NOT TO BE DOWNLOADED :  beautifulsoup4-4.8.2-py2-none-any.whl
+def test_download_bs4_package_noparam(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(pipdownload, ["beautifulsoup4==4.8.2", "-d", str(tmp_path)])
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 5
+
+
+# Add-on for ignoring unused version - Conflict between platform and version check #13
+# --python-version py3 --python-version cp37 --platform-tag manylinux1_x86_64 --dest . --no-source beautifulsoup4==4.8.2
+# Should download beautifulsoup4-4.8.2-py3-none-any.whl, soupsieve-2.0.1-py3-none-any.whl
+# NOT TO BE DOWNLOADED :  beautifulsoup4-4.8.2-py2-none-any.whl
+def test_download_bs4_package_veronly(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(pipdownload, ["--python-version", "cp37", "beautifulsoup4==4.8.2", "-d", str(tmp_path)])
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 2
+
+
+# Add-on for ignoring unused version - Conflict between platform and version check #13
+# --python-version py3 --python-version cp37 --platform-tag manylinux1_x86_64 --dest . --no-source beautifulsoup4==4.8.2
+# Should download beautifulsoup4-4.8.2-py3-none-any.whl, soupsieve-2.0.1-py3-none-any.whl
+# NOT TO BE DOWNLOADED :  beautifulsoup4-4.8.2-py2-none-any.whl
+def test_download_pip20_2_3_package(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(pipdownload, ["--python-version", "py3", "pip==20.2.3", "-d", str(tmp_path)])
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 2
+
+
 # "redundant" means there are redundant blank lines in requirement file.
 def test_download_from_requirement_file_redundant(
-    requirement_file_redundant, tmp_path: Path
+        requirement_file_redundant, tmp_path: Path
 ):
     runner = CliRunner()
     result = runner.invoke(
@@ -63,6 +113,7 @@ def test_download_with_option_python_versions(tmp_path):
     assert len(files) == get_file_num_from_site_pypi_org(package_name, ["cp27"])
 
 
+# Added -no-source because other way round 4 files were returned
 def test_download_with_option_python_versions_and_platform_tags(tmp_path):
     runner = CliRunner()
     package_name = "ujson"
@@ -130,6 +181,7 @@ def test_download_with_config_file(tmp_path: Path):
     settings_dict = {"python-versions": ["cp37"], "platform-tags": ["win_amd64"]}
     with open(settings.SETTINGS_FILE, "w") as f:
         json.dump(settings_dict, f, indent=True)
+
 
     package_name = "MarkupSafe"
     result = runner.invoke(pipdownload, [package_name, "-d", str(tmp_path)])
