@@ -1,19 +1,31 @@
+import distutils.util
 import hashlib
 import io
 import logging
 import os.path
+import platform
 import posixpath
 import re
 import shutil
+import subprocess
+import sys
 import tempfile
 import urllib
 from functools import partial
-from typing import BinaryIO, Dict, Generator, Iterator, List, NoReturn
-from urllib.parse import urljoin, urlparse, urlunparse
+from typing import BinaryIO
+from typing import Dict
+from typing import Generator
+from typing import Iterator
+from typing import List
+from typing import NoReturn
+from urllib.parse import urljoin
+from urllib.parse import urlparse
+from urllib.parse import urlunparse
 
 import click
 import requests
 from packaging.utils import canonicalize_name
+from pip._internal import main as pip_main
 from pipdownload.exceptions import HashMismatch
 from retrying import retry
 
@@ -158,7 +170,7 @@ class Hashes:
         self._raise(gots)
 
     def _raise(self, gots) -> NoReturn:
-        raise HashMismatch
+        raise HashMismatch({}, gots)
 
     def check_against_file(self, file: BinaryIO) -> None:
         """Check good hashes against a file-like object
@@ -312,3 +324,127 @@ def mkurl_pypi_url(url, project_name):
     if not loc.endswith("/"):
         loc = loc + "/"
     return loc
+
+
+def _is_running_32bit() -> bool:
+    return sys.maxsize == 2147483647
+
+
+def get_platform() -> str:
+    """Return our platform name 'win32', 'linux_x86_64'"""
+    if sys.platform == "darwin":
+        # distutils.util.get_platform() returns the release based on the value
+        # of MACOSX_DEPLOYMENT_TARGET on which Python was built, which may
+        # be significantly older than the user's current machine.
+        release, _, machine = platform.mac_ver()
+        split_ver = release.split(".")
+
+        if machine == "x86_64" and _is_running_32bit():
+            machine = "i386"
+        elif machine == "ppc64" and _is_running_32bit():
+            machine = "ppc"
+
+        return "macosx_{}_{}_{}".format(split_ver[0], split_ver[1], machine)
+
+    # XXX remove distutils dependency
+    result = distutils.util.get_platform().replace(".", "_").replace("-", "_")
+    if result == "linux_x86_64" and _is_running_32bit():
+        # 32 bit Python program (running on a 64 bit Linux): pip should only
+        # install and run 32 bit compiled extensions in that case.
+        result = "linux_i686"
+
+    return result
+
+
+#
+# def download_on_original_platform(index_url, directory, package, quiet):
+#
+#     command = [
+#         sys.executable,
+#         "-m",
+#         "pip",
+#         "download",
+#         "-i",
+#         index_url,
+#         "--dest",
+#         directory.path,
+#         package,
+#     ]
+#     if quiet:
+#         command.extend(["--progress-bar", "off", "-qqq"])
+#     try:
+#         subprocess.check_call(command)
+#     except subprocess.CalledProcessError as e:
+#         logger.error(
+#             "Can not use pip download to download the package %s on %s"
+#             " and Exception is below:" % (package, get_platform())
+#         )
+#         logger.error(e)
+#         return False
+#     return True
+#
+#
+# def download_on_linux(index_url, directory, package, quiet):
+#     # monkey patch: in case
+#     distutils.util.get_platform = lambda: "linux_x86_64"
+#     command = [
+#         "download",
+#         "-i",
+#         index_url,
+#         "--dest",
+#         directory.path,
+#         package,
+#     ]
+#     if quiet:
+#         command.extend(["--progress-bar", "off", "-qqq"])
+#     try:
+#         pip_main(command)
+#     except Exception as e:
+#         logger.error(
+#             "Can not use pip download to download the package %s on %s"
+#             " and Exception is below:" % (package, get_platform())
+#         )
+#         logger.error(e)
+#         return False
+#     return True
+
+
+def download_package(index_url, directory, package, quiet, platform):
+    if platform == "original":
+        command = [
+            sys.executable,
+            "-m",
+            "pip",
+            "download",
+            "-i",
+            index_url,
+            "--dest",
+            directory.path,
+            package,
+        ]
+    else:
+        # monkey patch: in case
+        distutils.util.get_platform = lambda: platform
+        command = [
+            "download",
+            "-i",
+            index_url,
+            "--dest",
+            directory.path,
+            package,
+        ]
+    if quiet:
+        command.extend(["--progress-bar", "off", "-qqq"])
+    try:
+        if platform == "original":
+            subprocess.check_call(command)
+        else:
+            pip_main(command)
+    except Exception as e:
+        logger.error(
+            "Can not use pip download to download the package %s on %s"
+            " and Exception is below:" % (package, get_platform())
+        )
+        logger.error(e)
+        return False
+    return True

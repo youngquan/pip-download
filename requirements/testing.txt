@@ -1,3 +1,4 @@
 -r development.txt
 pytest
 pytest-datadir
+beautifulsoup4

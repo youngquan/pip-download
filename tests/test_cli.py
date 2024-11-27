@@ -4,15 +4,19 @@ from pathlib import Path
 from click.testing import CliRunner
 from pipdownload import settings
 from pipdownload.cli import pipdownload
+from pipdownload.utils import resolve_package_file
+
+from tests.conftest import get_file_num_from_site_pypi_org
 
 
 # TODO: How to avoid the situation where there has already been a config file.
-def test_download_click_package(tmp_path: Path):
+def test_download_colorama_package(tmp_path: Path):
     runner = CliRunner()
-    result = runner.invoke(pipdownload, ["click==7.0", "-d", str(tmp_path)])
+    package_name = "colorama"
+    result = runner.invoke(pipdownload, [package_name, "-d", str(tmp_path)])
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 2
+    assert len(files) == get_file_num_from_site_pypi_org(package_name)
 
 
 # Add-on for ignoring unused version - Conflict between platform and version check #13
@@ -88,73 +92,81 @@ def test_download_from_requirement_file_normal(requirement_file_normal, tmp_path
 
 def test_download_with_option_whl_suffixes(tmp_path):
     runner = CliRunner()
+    package_name = "MarkupSafe"
     result = runner.invoke(
-        pipdownload, ["MarkupSafe==1.1.1", "--suffix", "win_amd64", "-d", tmp_path]
+        pipdownload, [package_name, "--suffix", "win_amd64", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
     # TODO: This should be consider again!
-    assert len(files) == 7
+    python_package = resolve_package_file(files[0].name)
+
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"], package_version=python_package.version)
 
 
 def test_download_with_option_python_versions(tmp_path):
     runner = CliRunner()
-    result = runner.invoke(
-        pipdownload, ["MarkupSafe==1.1.1", "-py", "cp27", "-d", tmp_path]
-    )
+    package_name = "MarkupSafe"
+    result = runner.invoke(pipdownload, [package_name, "-py", "cp27", "-d", tmp_path])
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 8
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["cp27"])
 
 
 # Added -no-source because other way round 4 files were returned
 def test_download_with_option_python_versions_and_platform_tags(tmp_path):
     runner = CliRunner()
+    package_name = "ujson"
     result = runner.invoke(
-        pipdownload, ["ujson", "-py", "cp36", "-p", "manylinux", "-d", tmp_path, "--no-source"]
+        pipdownload, [package_name, "-py", "cp36", "-p", "manylinux", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 3
+    python_package = resolve_package_file(files[0].name)
+    assert len(files) == get_file_num_from_site_pypi_org(
+        package_name, ["cp36", "manylinux"], package_version=python_package.version
+    )
 
 
 def test_download_when_dest_dir_does_not_exists(tmp_path: Path):
     runner = CliRunner()
     dir_name = "tmp"
-    result = runner.invoke(pipdownload, ["click", "-d", str(tmp_path / dir_name)])
+    package_name = "colorama"
+    result = runner.invoke(pipdownload, ["colorama", "-d", str(tmp_path / dir_name)])
     assert result.exit_code == 0
     dirs = list(tmp_path.iterdir())
     assert len(dirs) == 1
     files = list((tmp_path / dir_name).iterdir())
-    assert len(files) == 2
+    assert len(files) == get_file_num_from_site_pypi_org(package_name)
 
 
 def test_option_platform_tag(tmp_path):
     runner = CliRunner()
+    package_name = "ujson"
     result = runner.invoke(
-        pipdownload, ["ujson==3.0.0", "-p", "win_amd64", "-d", tmp_path]
+        pipdownload, [package_name, "-p", "win_amd64", "-d", tmp_path]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    # TODO: This should be consider again!
-    assert len(files) == 5
+    python_package = resolve_package_file(files[0].name)
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, ["win_amd64"],
+                                                         package_version=python_package.version)
 
 
 def test_option_on_source(tmp_path: Path):
     runner = CliRunner()
+    package_name = "colorama"
     result = runner.invoke(
-        pipdownload, ["click==7.0", "--no-source", "-d", str(tmp_path)]
+        pipdownload, [package_name, "--no-source", "-d", str(tmp_path)]
     )
     assert result.exit_code == 0
     files = list(tmp_path.iterdir())
-    assert len(files) == 1
+    assert len(files) == get_file_num_from_site_pypi_org(package_name, no_source=True)
 
 
 def test_packege_with_egg_file(tmp_path: Path):
     runner = CliRunner()
-    result = runner.invoke(
-        pipdownload, ["protobuf", "-d", str(tmp_path), "-py", "cp37"]
-    )
+    result = runner.invoke(pipdownload, ["protobuf==3.9.2", "-d", str(tmp_path)])
     assert result.exit_code == 0
     # files = list(tmp_path.iterdir())
     # assert len(files) == 1
@@ -170,8 +182,21 @@ def test_download_with_config_file(tmp_path: Path):
     with open(settings.SETTINGS_FILE, "w") as f:
         json.dump(settings_dict, f, indent=True)
 
-    _ = runner.invoke(pipdownload, ["MarkupSafe==1.1.1", "-d", str(tmp_path)])
+
+    package_name = "MarkupSafe"
+    result = runner.invoke(pipdownload, [package_name, "-d", str(tmp_path)])
 
     files = list(tmp_path.iterdir())
-    assert len(files) == 2
+    assert len(files) == get_file_num_from_site_pypi_org(
+        package_name, ["cp37", "win_amd64"]
+    )
     Path(settings.SETTINGS_FILE).unlink()
+
+
+def test_download_package_can_not_install_on_windows(tmp_path: Path):
+    runner = CliRunner()
+    package_name = "gnureadline"
+    result = runner.invoke(pipdownload, [package_name, "-d", str(tmp_path)])
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == get_file_num_from_site_pypi_org(package_name)

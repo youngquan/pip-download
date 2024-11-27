@@ -1,4 +1,5 @@
-from itertools import chain, repeat
+from itertools import chain
+from itertools import repeat
 
 
 class HashMismatch(Exception):
