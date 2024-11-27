@@ -92,6 +92,13 @@ session = CacheControl(sess)
     help="When specified, the source package of the project will not be " "downloaded.",
 )
 @click.option(
+    "--source-as-fallback",
+    "source_as_fallback",
+    is_flag=True,
+    help="When specified, the source package is downloaded if no wheel package exists, "
+         "even if the --no-source option is set.",
+)
+@click.option(
     "--show-config",
     "show_config",
     is_flag=True,
@@ -105,17 +112,18 @@ session = CacheControl(sess)
           "For use in other tools for checking the libraries."),
 )
 def pipdownload(
-    packages,
-    index_url,
-    requirement_file,
-    dest_dir,
-    whl_suffixes,
-    platform_tags,
-    python_versions,
-    quiet,
-    no_source,
-    show_config,
-    show_urls,
+        packages,
+        index_url,
+        requirement_file,
+        dest_dir,
+        whl_suffixes,
+        platform_tags,
+        python_versions,
+        quiet,
+        no_source,
+        source_as_fallback,
+        show_config,
+        show_urls
 ):
     """
     pip-download is a tool which can be used to download python projects and their dependencies listed on
@@ -203,7 +211,8 @@ def pipdownload(
                 url = mkurl_pypi_url(index_url, python_package.name)
                 try:
                     r = session.get(url)
-                    for file in get_file_links(r.text, url, python_package):
+                    file_links = get_file_links(r.text, url, python_package)
+                    for file in file_links:
                         url_list.append(file)
                         if "none-any" in file:
                             if "py2.py3" in file_name or not python_versions:
@@ -213,9 +222,18 @@ def pipdownload(
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
-                            if not no_source:
+                            download_source = False
+                            if no_source:
+                                if source_as_fallback and not wheel_package_exists(file_links):
+                                    download_source = True
+                                else:
+                                    continue
+                            else:
+                                download_source = True
+
+                            if download_source:
                                 download(file, dest_dir)
-                            continue
+                                continue
 
                         eligible = True
                         if platform_tags:

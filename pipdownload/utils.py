@@ -326,6 +326,11 @@ def mkurl_pypi_url(url, project_name):
     return loc
 
 
+
+def wheel_package_exists(package_links: Set[str]) -> bool:
+    return any([".whl" in link for link in package_links])
+
+ 
 def _is_running_32bit() -> bool:
     return sys.maxsize == 2147483647
 

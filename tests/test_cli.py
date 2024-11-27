@@ -164,6 +164,26 @@ def test_option_on_source(tmp_path: Path):
     assert len(files) == get_file_num_from_site_pypi_org(package_name, no_source=True)
 
 
+def test_option_no_source_no_wheel(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["pyusb==1.0.2", "--no-source", "-d", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 0
+
+
+def test_option_no_source_no_wheel_source_as_fallback(tmp_path: Path):
+    runner = CliRunner()
+    result = runner.invoke(
+        pipdownload, ["pyusb==1.0.2", "--no-source", "--source-as-fallback", "-d", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    files = list(tmp_path.iterdir())
+    assert len(files) == 1
+
+
 def test_packege_with_egg_file(tmp_path: Path):
     runner = CliRunner()
     result = runner.invoke(pipdownload, ["protobuf==3.9.2", "-d", str(tmp_path)])
