@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pipdownload.utils import PythonPackage, get_file_links
+from pipdownload.utils import PythonPackage
+from pipdownload.utils import get_file_links
 
 
 def test_get_file_links(shared_datadir: Path):

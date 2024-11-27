@@ -2,7 +2,6 @@ import itertools
 import json
 import logging
 import os
-import subprocess
 import sys
 import warnings
 from collections import OrderedDict
@@ -13,17 +12,15 @@ import pip_api
 import requests
 from cachecontrol import CacheControl
 # from pipdownload.settings import SETTINGS_FILE
-from pipdownload import logger, settings
-from pipdownload.utils import (
-    TempDirectory,
-    download as normal_download,
-    get_file_links,
-    mkurl_pypi_url,
-    quiet_download,
-    resolve_package_file,
-    wheel_package_exists
-)
-from tzlocal import get_localzone
+from pipdownload import logger
+from pipdownload import settings
+from pipdownload.utils import TempDirectory
+from pipdownload.utils import download as normal_download
+from pipdownload.utils import download_package
+from pipdownload.utils import get_file_links
+from pipdownload.utils import mkurl_pypi_url
+from pipdownload.utils import quiet_download
+from pipdownload.utils import resolve_package_file
 
 sess = requests.Session()
 session = CacheControl(sess)
@@ -35,7 +32,6 @@ session = CacheControl(sess)
     "-i",
     "--index-url",
     "index_url",
-    default="https://pypi.org/simple",
     type=click.STRING,
     help="Pypi index.",
 )
@@ -93,8 +89,7 @@ session = CacheControl(sess)
     "--no-source",
     "no_source",
     is_flag=True,
-    help="When specified, the source package of the project that provides wheel package will not be "
-    "downloaded.",
+    help="When specified, the source package of the project will not be " "downloaded.",
 )
 @click.option(
     "--source-as-fallback",
@@ -113,7 +108,8 @@ session = CacheControl(sess)
     "--show-urls",
     "show_urls",
     is_flag=True,
-    help="When specified, all of downloaded urls will be printed as an report list, with library name before them. For use in other tools for checking the libraries.",
+    help=("When specified, all of downloaded urls will be printed as an report list, with library name before them. " +
+          "For use in other tools for checking the libraries."),
 )
 def pipdownload(
         packages,
@@ -163,9 +159,6 @@ def pipdownload(
             if platform_tags:
                 click.echo(f"Using `platform-tags` in config file.")
 
-    tz = get_localzone()
-    if tz.zone in ["Asia/Shanghai", "Asia/Chongqing"]:
-        index_url = "https://mirrors.aliyun.com/pypi/simple/"
 
     if whl_suffixes:
         warnings.warn(
@@ -198,29 +191,12 @@ def pipdownload(
                 "We are using pip download command to download package %s" % package
             )
             logger.info("-" * 50)
-
-            try:
-                command = [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "download",
-                    "-i",
-                    index_url,
-                    "--dest",
-                    directory.path,
-                    package,
-                ]
-                if quiet:
-                    command.extend(["--progress-bar", "off", "-qqq"])
-                subprocess.check_call(command)
-            except subprocess.CalledProcessError as e:
-                logger.error(
-                    "Sorry, we can not use pip download to download the package %s,"
-                    " and Exception is below" % package
-                )
-                logger.error(e)
-                raise
+            if download_package(
+                index_url, directory, package, quiet, "original"
+            ) or download_package(index_url, directory, package, quiet, "linux_x86_64"):
+                pass
+            else:
+                raise Exception
             file_names = os.listdir(directory.path)
 
             for file_name in file_names:
@@ -239,7 +215,10 @@ def pipdownload(
                     for file in file_links:
                         url_list.append(file)
                         if "none-any" in file:
-                            download(file, dest_dir)
+                            if "py2.py3" in file_name or not python_versions:
+                                download(file, dest_dir)
+                            elif [1 for x in python_versions if "-"+x+"-" in file]:
+                                download(file, dest_dir)
                             continue
 
                         if ".tar.gz" in file or ".zip" in file:
